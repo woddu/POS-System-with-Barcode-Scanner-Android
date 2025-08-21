@@ -1,6 +1,5 @@
 package com.example.firebaseapptest.data.di
 
-import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.example.firebaseapptest.data.local.InventoryDatabase
