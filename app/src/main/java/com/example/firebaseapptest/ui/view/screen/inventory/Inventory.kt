@@ -1,0 +1,232 @@
+package com.example.firebaseapptest.ui.view.screen.inventory
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.firebaseapptest.R
+import com.example.firebaseapptest.ui.event.InventoryEvent
+import com.example.firebaseapptest.ui.state.InventoryState
+import com.example.firebaseapptest.ui.view.screen.components.MyCardDefaults
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Inventory(
+    navigateToScanner: Boolean,
+    state: InventoryState,
+    onEvent: (InventoryEvent) -> Unit,
+    onNavigateToScanner: () -> Unit,
+    onNavigateToDetails: () -> Unit
+){
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp)
+        ) {
+
+            if (state.items.isEmpty()){
+                item {
+                    Text(
+                        text = "No items found",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    )
+                }
+            } else {
+                item { Spacer(modifier = Modifier.padding(top = 6.dp)) }
+                items(state.items.size) { index ->
+                    Card(
+                        colors = MyCardDefaults.cardColors(),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 8.dp
+                        ),
+                        modifier = Modifier
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                        ) {
+                            Text(
+                                text = state.items[index].name,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
+                                modifier = Modifier.fillMaxWidth(.5f)
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "₱ " + state.items[index].price.toString(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontSize = 24.sp,
+                                )
+                                IconButton(onClick = {
+                                    onEvent(InventoryEvent.OnInventoryItemDetails(state.items[index].code))
+                                    onNavigateToDetails()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "details"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        if (state.showFormDialog) {
+            BasicAlertDialog(
+                onDismissRequest = { onEvent(InventoryEvent.OnInventoryAddCanceled) },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Card(
+                    colors = MyCardDefaults.cardColors(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 24.dp
+                    ),
+                    modifier = Modifier
+                ) {
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier
+                            .padding(26.dp)
+                    ) {
+                        Text(
+                            text = "Add Item",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 30.sp
+                        )
+                        Text(
+                            text = "fields with * is required",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ){
+                            TextField(
+                                value = state.itemCode,
+                                onValueChange = { onEvent(InventoryEvent.OnInventorySetItemCode(it)) },
+                                label = { Text("Code *") },
+                                modifier = Modifier.fillMaxWidth(.75f)
+                            )
+                            FilledIconButton(
+                                onClick = { onEvent(InventoryEvent.OnScanButtonClickedFromInventory) }
+                            ) {
+                                Icon(imageVector = ImageVector.vectorResource(R.drawable.barcode_scanner_icon), contentDescription = "Scan Barcode")
+                            }
+                        }
+                        TextField(
+                            value = state.itemName,
+                            onValueChange = { onEvent(InventoryEvent.OnInventorySetItemName(it)) },
+                            label = { Text("Name *") },
+                        )
+                        TextField(
+                            value = state.itemPrice,
+                            onValueChange = { newValue ->
+                                val filteredValue = newValue.filter { it.isDigit() || it == '.' }
+                                onEvent(InventoryEvent.OnInventorySetItemPrice(filteredValue))
+                            },
+                            label = { Text("Price *") },
+                        )
+                        TextField(
+                            value = state.itemDescription,
+                            onValueChange = { onEvent(InventoryEvent.OnInventorySetItemDescription(it)) },
+                            label = { Text("Description") },
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ){
+
+                            TextField(
+                                value = state.itemQuantity,
+                                onValueChange = { newValue ->
+                                    val filteredValue = newValue.filter { it.isDigit() }
+                                    onEvent(InventoryEvent.OnInventorySetItemQuantity(filteredValue))
+                                },
+                                label = { Text("Quantity") },
+                                modifier = Modifier.fillMaxWidth(.5f)
+                            )
+                            TextField(
+                                value = state.itemSold,
+                                onValueChange = { newValue ->
+                                    val filteredValue = newValue.filter { it.isDigit() }
+                                    onEvent(InventoryEvent.OnInventorySetItemSold(filteredValue))
+                                },
+                                label = { Text("Sold") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                        }
+                        Button(onClick = {
+                            if (state.itemCode.isNotEmpty() && state.itemName.isNotEmpty() && state.itemPrice.isNotEmpty()){
+                                onEvent(InventoryEvent.OnInventoryAddConfirmed)
+                            } else {
+
+                            }
+                        }){
+                            Text("Add")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Side effect for navigation
+    LaunchedEffect(navigateToScanner) {
+        if (navigateToScanner) {
+            onNavigateToScanner()
+        }
+    }
+}
+
