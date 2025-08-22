@@ -7,10 +7,10 @@ import androidx.room.PrimaryKey
 data class Item(
     @PrimaryKey val code: Long,
     val name: String,
-    val description: String?,
-    val color: String?,
-    val size: String?,
+    val price: Double,
+    val description: String? = "",
+    val color: String? = "",
+    val size: String? = "",
     val quantity: Int? = 0,
     val sold: Int? = 0,
-    val price: Double,
 )

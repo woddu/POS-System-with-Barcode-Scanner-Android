@@ -6,8 +6,6 @@ import androidx.room.TypeConverters
 import com.example.firebaseapptest.data.local.util.DateConverters
 import java.time.LocalDateTime
 
-
-
 @Entity(tableName = "sales")
 @TypeConverters(DateConverters::class)
 data class Sale(
