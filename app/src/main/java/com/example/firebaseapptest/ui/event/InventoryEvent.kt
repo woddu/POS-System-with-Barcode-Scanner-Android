@@ -1,7 +1,5 @@
 package com.example.firebaseapptest.ui.event
 
-import com.example.firebaseapptest.ui.view.AppEvent
-
 
 sealed interface InventoryEvent {
 
