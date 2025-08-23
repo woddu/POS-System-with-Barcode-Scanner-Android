@@ -13,9 +13,14 @@ class InventoryRepository @Inject constructor(
     private val saleDao: SaleDao,
     private val saleItemDao: SaleItemDao
 ) {
-    fun getItem(code: Long) = itemDao.getItemByCode(code)
+    suspend fun getItemByCodeForSale(code: Long) = itemDao.getItemByCodeForSale(code)
+    suspend fun getItem(code: Long) = itemDao.getItemByCode(code)
     fun getAllItems() = itemDao.getItems()
-    suspend fun insertItem(item: Item) = itemDao.addItem(item)
+    suspend fun getItemsCount() = itemDao.getCount()
+
+    fun getAllItemsPaginated(limit: Int, offset: Int) = itemDao.getItemsPaginated(limit, offset)
+
+    suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
     suspend fun deleteItem(item: Item)  = itemDao.deleteItem(item)
 
     fun getSales() = saleDao.getSales()
