@@ -4,53 +4,93 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.repository.InventoryRepository
+import com.example.firebaseapptest.ui.view.screen.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import android.util.Log
+import com.example.firebaseapptest.ui.event.InventoryEvent
+import com.example.firebaseapptest.ui.state.InventoryState
+import kotlinx.coroutines.flow.first
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val repository: InventoryRepository
 ) : ViewModel() {
-    private val _items = repository.getAllItems().stateIn(
+    private val inventoryPageSize = 20
+    private var _currentPage = MutableStateFlow(1)
+    private val _items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(pageNumber(_currentPage.value))).stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(),
         emptyList()
     )
+
     private val _sales = repository.getSales().stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(),
         emptyList()
     )
-    private val _saleItems = repository.getSaleItems().stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(),
-        emptyList()
-    )
     private val _state = MutableStateFlow(AppState())
-    val state = combine(_state, _items, _sales, _saleItems){state, items, sales, saleItems ->
+    private val _inventoryState = MutableStateFlow(InventoryState())
+
+    val state = combine(_state, _sales){state, sales ->
         state.copy(
-            sales = sales,
-            items = items,
-            saleItems = saleItems
+            sales = sales
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppState())
 
+    val inventoryState = combine(_inventoryState, _items){state, items ->
+        state.copy(
+            items = items
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InventoryState())
+    private fun pageNumber(page: Int): Int{
+        return (page - 1) * inventoryPageSize
+    }
+
+    init {
+        viewModelScope.launch {
+            val totalCount = repository.getItemsCount()
+            val lastPageIndex = if (totalCount == 0) 0 else (totalCount - 1) / inventoryPageSize
+            val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(1)).first()
+            _inventoryState.update {
+                it.copy(
+                    currentPage = 1,
+                    items = items,
+                    lastPage = lastPageIndex + 1
+                )
+            }
+        }
+    }
 
     fun onEvent(
         event : AppEvent
     ) {
         when (event){
-            AppEvent.OnScanButtonClicked -> {
-                _state.update { it.copy(navigateToScanner = true) }
+            AppEvent.OnScanButtonClickedFromHome -> {
+                _state.update { it.copy(navigateToScanner = true, navigateBackTo = Route.Home.path) }
             }
+
             is AppEvent.OnBarcodeScanned -> {
-                _state.update { it.copy(scannedText = event.text) }
+                if (_state.value.navigateBackTo == Route.Home.path){
+                    viewModelScope.launch {
+                        val item = repository.getItemByCodeForSale(event.text.toLong())
+
+                        _state.update {
+                            it.copy(
+                                itemsInCounter = state.value.itemsInCounter + item
+                            )
+                        }
+                    }
+                } else if (_state.value.navigateBackTo == Route.Inventory.path){
+                    _inventoryState.update { it.copy(itemCode = event.text) }
+                }
+
             }
             AppEvent.OnScannerConsumed -> {
                 _state.update { it.copy(navigateToScanner = false) }
@@ -59,69 +99,240 @@ class AppViewModel @Inject constructor(
             AppEvent.OnScanComplete -> {
 
             }
+        }
 
-            AppEvent.OnInventoryAddButtonClicked -> {
-                _state.update { it.copy(inventoryShowFormDialog = true) }
+    }
+
+    fun onInventoryEvent(
+        event: InventoryEvent
+    ){
+        when (event){
+
+            InventoryEvent.OnScanButtonClickedFromInventory -> {
+                _state.update { it.copy(navigateToScanner = true, navigateBackTo = Route.Inventory.path) }
             }
 
-            AppEvent.OnInventoryAddCanceled -> {
-                _state.update { it.copy(inventoryShowFormDialog = false) }
+            InventoryEvent.OnInventoryAddButtonClicked -> {
+                _inventoryState.update { it.copy(
+                    showFormDialog = true,
+                    itemName = "",
+                    itemPrice = "",
+                    itemQuantity = "",
+                    itemDescription = "",
+                    itemColor = "",
+                    itemCode = "",
+                    itemSize = "",
+                    itemSold = ""
+                ) }
             }
 
-            AppEvent.OnInventoryAddConfirmed -> {
+            InventoryEvent.OnInventoryAddCanceled -> {
+                _inventoryState.update { it.copy(
+                    showFormDialog = false,
+                    itemName = "",
+                    itemPrice = "",
+                    itemQuantity = "",
+                    itemDescription = "",
+                    itemColor = "",
+                    itemCode = "",
+                    itemSize = "",
+                    itemSold = ""
+                ) }
+            }
+
+            InventoryEvent.OnInventoryAddConfirmed -> {
                 viewModelScope.launch {
                     val item = Item(
-                        code = state.value.inventoryItemCode.toLong(),
-                        name = state.value.inventoryItemName,
-                        price = state.value.inventoryItemPrice.toDouble(),
-                        quantity = state.value.inventoryItemQuantity.toInt(),
-                        description = state.value.inventoryItemDescription,
-                        color = state.value.inventoryItemColor,
-                        size = state.value.inventoryItemSize,
-                        sold = state.value.inventoryItemSold.toInt()
+                        code = inventoryState.value.itemCode.toLong(),
+                        name = inventoryState.value.itemName,
+                        price = inventoryState.value.itemPrice.toDouble(),
+                        quantity = if (inventoryState.value.itemQuantity.isEmpty()) 0 else inventoryState.value.itemQuantity.toInt(),
+                        description = inventoryState.value.itemDescription,
+                        color = inventoryState.value.itemColor,
+                        size = inventoryState.value.itemSize,
+                        sold = if (inventoryState.value.itemSold.isEmpty()) 0 else inventoryState.value.itemSold.toInt()
                     )
-                    repository.insertItem(item)
-                    _state.update { it.copy(inventoryShowFormDialog = false) }
-                    _state.update {
+                    repository.upsertItem(item)
+                    _inventoryState.update { it.copy(showFormDialog = false) }
+                    _inventoryState.update {
                         it.copy(
-                            inventoryItemName = "",
-                            inventoryItemPrice = "",
-                            inventoryItemQuantity = "",
-                            inventoryItemDescription = "",
-                            inventoryItemColor = "",
-                            inventoryItemCode = "",
-                            inventoryItemSize = "",
-                            inventoryItemSold = ""
+                            itemName = "",
+                            itemPrice = "",
+                            itemQuantity = "",
+                            itemDescription = "",
+                            itemColor = "",
+                            itemCode = "",
+                            itemSize = "",
+                            itemSold = ""
                         )
                     }
                 }
             }
-            is AppEvent.OnInventorySetItemCode -> {
-                _state.update { it.copy(inventoryItemCode = event.code) }
+            is InventoryEvent.OnInventorySetItemCode -> {
+                _inventoryState.update { it.copy(itemCode = event.code) }
             }
-            is AppEvent.OnInventorySetItemColor -> {
-                _state.update { it.copy(inventoryItemColor = event.color) }
+            is InventoryEvent.OnInventorySetItemColor -> {
+                _inventoryState.update { it.copy(itemColor = event.color) }
             }
-            is AppEvent.OnInventorySetItemDescription -> {
-                _state.update { it.copy(inventoryItemDescription = event.description) }
+            is InventoryEvent.OnInventorySetItemDescription -> {
+                _inventoryState.update { it.copy(itemDescription = event.description) }
             }
-            is AppEvent.OnInventorySetItemName -> {
-                _state.update { it.copy(inventoryItemName = event.name) }
+            is InventoryEvent.OnInventorySetItemName -> {
+                _inventoryState.update { it.copy(itemName = event.name) }
             }
-            is AppEvent.OnInventorySetItemPrice -> {
-                _state.update { it.copy(inventoryItemPrice = event.price) }
+            is InventoryEvent.OnInventorySetItemPrice -> {
+                _inventoryState.update { it.copy(itemPrice = event.price) }
             }
-            is AppEvent.OnInventorySetItemQuantity -> {
-                _state.update { it.copy(inventoryItemQuantity = event.quantity) }
+            is InventoryEvent.OnInventorySetItemQuantity -> {
+                _inventoryState.update { it.copy(itemQuantity = event.quantity) }
             }
-            is AppEvent.OnInventorySetItemSize -> {
-                _state.update { it.copy(inventoryItemSize = event.size) }
+            is InventoryEvent.OnInventorySetItemSize -> {
+                _inventoryState.update { it.copy(itemSize = event.size) }
             }
-            is AppEvent.OnInventorySetItemSold -> {
-                _state.update { it.copy(inventoryItemSold = event.sold) }
+            is InventoryEvent.OnInventorySetItemSold -> {
+                _inventoryState.update { it.copy(itemSold = event.sold) }
+            }
+
+            is InventoryEvent.OnInventoryItemDetails -> {
+                viewModelScope.launch {
+                    val item = repository.getItem(event.code)
+                    _inventoryState.update {
+                        it.copy(
+                            itemCode = item.code.toString(),
+                            itemName = item.name,
+                            itemPrice = item.price.toString(),
+                            itemQuantity = item.quantity.toString(),
+                            itemDescription = if (item.description.isNullOrEmpty()) "" else item.description,
+                            itemColor = if (item.color.isNullOrEmpty()) "" else item.color,
+                            itemSize = if (item.size.isNullOrEmpty()) "" else item.size,
+                            itemSold = item.sold.toString()
+                        )
+                    }
+                }
+            }
+
+            InventoryEvent.OnInventoryDeleteCanceled -> {
+                _inventoryState.update { it.copy(deleteConfirmationDialog = false) }
+            }
+            is InventoryEvent.OnInventoryDeleteConfirmed -> {
+                viewModelScope.launch {
+                    val item = repository.getItem(event.code)
+                    repository.deleteItem(item)
+                    _inventoryState.update { it.copy(
+                        deleteConfirmationDialog = false,
+                        itemName = "",
+                        itemPrice = "",
+                        itemQuantity = "",
+                        itemDescription = "",
+                        itemColor = "",
+                        itemCode = "",
+                        itemSize = "",
+                        itemSold = ""
+                    ) }
+
+                }
+            }
+            InventoryEvent.OnInventoryDeleteWarning -> {
+                _inventoryState.update {
+                    it.copy(deleteConfirmationDialog = true)
+                }
+            }
+            InventoryEvent.OnInventoryEditConfirmed -> {
+                viewModelScope.launch {
+                    val item = Item(
+                        code = inventoryState.value.itemCode.toLong(),
+                        name = inventoryState.value.itemName,
+                        price = inventoryState.value.itemPrice.toDouble(),
+                        description = inventoryState.value.itemDescription,
+                        color = inventoryState.value.itemColor,
+                        size = inventoryState.value.itemSize,
+                        sold = if (inventoryState.value.itemSold.isEmpty()) 0 else inventoryState.value.itemSold.toInt(),
+                        quantity = if (inventoryState.value.itemQuantity.isEmpty()) 0 else inventoryState.value.itemQuantity.toInt()
+                    )
+                    repository.upsertItem(item)
+                    _inventoryState.update {
+                        it.copy(
+                            showFormDialog = false,
+                            itemName = "",
+                            itemPrice = "",
+                            itemQuantity = "",
+                            itemDescription = "",
+                            itemColor = "",
+                            itemCode = "",
+                            itemSize = "",
+                            itemSold = ""
+                        )
+                    }
+                }
+            }
+
+            InventoryEvent.OnInventoryFirstPage -> {
+                viewModelScope.launch {
+                    val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(1)).first()
+                    _inventoryState.update {
+                        it.copy(
+                            currentPage = 1,
+                            items = items
+                        )
+                    }
+                    _currentPage.update { inventoryState.value.currentPage }
+                }
+            }
+            InventoryEvent.OnInventoryLastPage -> {
+                viewModelScope.launch {
+                    val totalCount = repository.getItemsCount()
+                    val lastPageIndex = if (totalCount == 0) 0 else (totalCount - 1) / inventoryPageSize
+                    val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(lastPageIndex)).first()
+                    _inventoryState.update {
+                        it.copy(
+                            currentPage = lastPageIndex + 1,
+                            items = items,
+                            lastPage = lastPageIndex + 1
+                        )
+                    }
+                    _currentPage.update { inventoryState.value.currentPage }
+                }
+            }
+            InventoryEvent.OnInventoryNextPage -> {
+                viewModelScope.launch {
+                    val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(inventoryState.value.currentPage + 1)).first()
+
+                    _inventoryState.update {
+                        it.copy(
+                            currentPage = inventoryState.value.currentPage + 1,
+                            items = items
+                        )
+                    }
+                    _currentPage.update { inventoryState.value.currentPage }
+                }
+            }
+            is InventoryEvent.OnInventoryPageChanged -> {
+                viewModelScope.launch {
+                    val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(event.page)).first()
+                    _inventoryState.update {
+                        it.copy(
+                            currentPage = event.page,
+                            items = items
+                        )
+                    }
+                    _currentPage.update { inventoryState.value.currentPage }
+                }
+            }
+            InventoryEvent.OnInventoryPreviousPage -> {
+                viewModelScope.launch {
+                    val previousPage = if (inventoryState.value.currentPage > 1) inventoryState.value.currentPage - 1 else 1
+                    val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(previousPage)).first()
+                    _inventoryState.update {
+                        it.copy(
+                            currentPage = previousPage,
+                            items = items
+                        )
+                    }
+                    _currentPage.update { inventoryState.value.currentPage }
+                }
+
             }
         }
-
     }
 
 }
