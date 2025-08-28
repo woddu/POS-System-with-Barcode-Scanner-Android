@@ -7,14 +7,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -35,7 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.InventoryState
-import com.example.firebaseapptest.ui.view.screen.components.MyCardDefaults
+import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,67 +52,90 @@ fun Inventory(
 ){
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
+        verticalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxSize()
     ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                TextField(
+                    value = "Search",
+                    onValueChange = {
 
-            if (state.items.isEmpty()){
-                item {
-                    Text(
-                        text = "No items found",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
+                    },
+                    prefix = {
+                        Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
+                    }
+                )
+                FilledIconButton(
+                    onClick = { onEvent(InventoryEvent.OnInventoryAddButtonClicked) },
+                    shape = CircleShape,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item")
                 }
-            } else {
-                item { Spacer(modifier = Modifier.padding(top = 6.dp)) }
-                items(state.items.size) { index ->
-                    Card(
-                        colors = MyCardDefaults.cardColors(),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 8.dp
-                        ),
-                        modifier = Modifier
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically,
+            }
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+
+                if (state.items.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No items found",
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
-                                .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                                .padding(vertical = 8.dp)
+                        )
+                    }
+                } else {
+                    item { Spacer(modifier = Modifier.padding(top = 6.dp)) }
+                    items(state.items.size) { index ->
+                        SimpleCard(
+                            roundedCornerShape = 12.dp,
+                            elevation = 8.dp
                         ) {
-                            Text(
-                                text = state.items[index].name,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp,
-                                modifier = Modifier.fillMaxWidth(.5f)
-                            )
                             Row(
-                                horizontalArrangement = Arrangement.End,
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
                             ) {
                                 Text(
-                                    text = "₱ " + state.items[index].price.toString(),
+                                    text = state.items[index].name,
                                     style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
                                     fontSize = 24.sp,
+                                    modifier = Modifier.fillMaxWidth(.5f)
                                 )
-                                IconButton(onClick = {
-                                    onEvent(InventoryEvent.OnInventoryItemDetails(state.items[index].code))
-                                    onNavigateToDetails()
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.MoreVert,
-                                        contentDescription = "details"
+                                Row(
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "₱ " + state.items[index].price.toString(),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontSize = 24.sp,
                                     )
+                                    IconButton(onClick = {
+                                        onEvent(InventoryEvent.OnInventoryItemDetails(state.items[index].code))
+                                        onNavigateToDetails()
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = "details"
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -118,20 +145,33 @@ fun Inventory(
         }
 
 
-        if (state.showFormDialog) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = { onEvent(InventoryEvent.OnInventoryPreviousPage) },
+                enabled = state.currentPage > 1
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Page")
+            }
+            Text(state.currentPage.toString() + "/" + state.lastPage.toString())
+            IconButton(
+                onClick = { onEvent(InventoryEvent.OnInventoryNextPage) },
+                enabled = state.currentPage < state.lastPage
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Page")
+            }
+        }
+    }
+
+    if (state.showFormDialog) {
             BasicAlertDialog(
                 onDismissRequest = { onEvent(InventoryEvent.OnInventoryAddCanceled) },
                 modifier = Modifier.padding(8.dp)
             ) {
-                Card(
-                    colors = MyCardDefaults.cardColors(),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 24.dp
-                    ),
-                    modifier = Modifier
-                ) {
-
+                SimpleCard {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier
@@ -221,7 +261,7 @@ fun Inventory(
                 }
             }
         }
-    }
+
     // Side effect for navigation
     LaunchedEffect(navigateToScanner) {
         if (navigateToScanner) {
