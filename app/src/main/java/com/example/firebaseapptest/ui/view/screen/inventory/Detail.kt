@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,8 +26,11 @@ import androidx.compose.ui.unit.sp
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.InventoryState
+import com.example.firebaseapptest.ui.view.screen.components.MyCardDefaults
+import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Details(
     state: InventoryState,
@@ -138,5 +143,42 @@ fun Details(
             }
         }
     }
-
+    if (state.deleteConfirmationDialog){
+        BasicAlertDialog(
+            onDismissRequest = { onEvent(InventoryEvent.OnInventoryDeleteCanceled) },
+        ) {
+            SimpleCard {
+                Column(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Text(
+                        text = "Are you sure you want to delete ${state.itemName}?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ){
+                        Button(
+                            onClick = {
+                                onEvent(InventoryEvent.OnInventoryDeleteConfirmed(state.itemCode.toLong()))
+                                navigate()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Text("Delete")
+                        }
+                        Button(onClick = { onEvent(InventoryEvent.OnInventoryDeleteCanceled) }) {
+                            Text("Cancel")
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
