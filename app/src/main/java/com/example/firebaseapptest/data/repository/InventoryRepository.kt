@@ -21,7 +21,7 @@ class InventoryRepository @Inject constructor(
     fun getAllItemsPaginated(limit: Int, offset: Int) = itemDao.getItemsPaginated(limit, offset)
 
     suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
-    suspend fun deleteItem(item: Item)  = itemDao.deleteItem(item)
+    suspend fun deleteItem(item: Item?)  = if(item != null)itemDao.deleteItem(item) else Unit
 
     fun getSales() = saleDao.getSales()
     fun getTodaySales(startOfDay: Long, endOfDay: Long) = saleDao.getTodaySales(startOfDay,endOfDay)
@@ -31,10 +31,10 @@ class InventoryRepository @Inject constructor(
     fun getSaleItems() = saleItemDao.getAllSaleItems()
     fun getSaleItemById(id: Int) = saleItemDao.getSaleItemById(id)
     fun getSaleItemsBySaleId(id: Int) = saleItemDao.getSaleItemsBySaleId(id)
-    fun insertSaleItem(saleItem: SaleItem) = saleItemDao.insertSaleItem(saleItem)
-    fun insertSaleItems(saleItems: List<SaleItem>) = saleItemDao.insertSaleItems(saleItems)
-    fun updateSaleItem(saleItem: SaleItem) = saleItemDao.updateSaleItem(saleItem)
-    fun updateSaleItems(saleItems: List<SaleItem>) = saleItemDao.updateSaleItems(saleItems)
+    fun addSaleItem(saleItem: SaleItem) = saleItemDao.insertSaleItem(saleItem)
+    fun addSaleItems(saleItems: List<SaleItem>) = saleItemDao.insertSaleItems(saleItems)
+    fun editSaleItem(saleItem: SaleItem) = saleItemDao.updateSaleItem(saleItem)
+    fun editSaleItems(saleItems: List<SaleItem>) = saleItemDao.updateSaleItems(saleItems)
     fun deleteSaleItem(saleItem: SaleItem) = saleItemDao.deleteSaleItem(saleItem)
     fun deleteSaleItemById(id: Int) = saleItemDao.deleteSaleItemById(id)
     fun deleteBySaleId(saleId: Int) = saleItemDao.deleteBySaleId(saleId)
