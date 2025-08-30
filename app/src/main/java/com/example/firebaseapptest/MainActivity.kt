@@ -20,7 +20,8 @@ class MainActivity : ComponentActivity() {
             FirebaseApptestTheme {
                 val viewModel = hiltViewModel<AppViewModel>()
                 val state = viewModel.state.collectAsState().value
-                AppScreen(state, viewModel::onEvent)
+                val inventoryState = viewModel.inventoryState.collectAsState().value
+                AppScreen(state, inventoryState, viewModel::onEvent, viewModel::onInventoryEvent)
             }
         }
     }
