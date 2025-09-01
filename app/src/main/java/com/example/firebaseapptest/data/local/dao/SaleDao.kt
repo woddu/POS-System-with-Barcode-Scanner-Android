@@ -21,12 +21,23 @@ interface SaleDao {
     @Query("SELECT * FROM sales ORDER BY date DESC")
     fun getSales(): Flow<List<Sale>>
 
+    @Query("SELECT * FROM sales ORDER BY date DESC LIMIT :limit OFFSET :offset")
+    fun getSalesPaginated(limit: Int, offset: Int): Flow<List<Sale>>
+
     @Query("""
         SELECT * FROM sales
         WHERE date BETWEEN :startOfDay AND :endOfDay
         ORDER BY date DESC
     """)
     fun getTodaySales(startOfDay: Long, endOfDay: Long): Flow<List<Sale>>
+
+    @Query("""
+        SELECT * FROM sales
+        WHERE date BETWEEN :startOfDay AND :endOfDay
+        ORDER BY date DESC 
+        LIMIT :limit OFFSET :offset 
+    """)
+    fun getTodaySalesPaginated(startOfDay: Long, endOfDay: Long, limit: Int, offset: Int): Flow<List<Sale>>
 
     @Query("SELECT * FROM sales WHERE id = :id")
     suspend fun getSale(id: Int): Sale
