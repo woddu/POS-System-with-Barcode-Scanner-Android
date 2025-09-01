@@ -24,6 +24,7 @@ class InventoryRepository @Inject constructor(
     suspend fun deleteItem(item: Item?)  = if(item != null)itemDao.deleteItem(item) else Unit
 
     fun getSales() = saleDao.getSales()
+    fun getSalesPaginated(limit: Int, offset: Int) = saleDao.getSalesPaginated(limit,offset)
     fun getTodaySales(startOfDay: Long, endOfDay: Long) = saleDao.getTodaySales(startOfDay,endOfDay)
     suspend fun addSale(sale: Sale) = saleDao.addSale(sale)
     suspend fun deleteSale(sale: Sale) = saleDao.deleteSale(sale)
