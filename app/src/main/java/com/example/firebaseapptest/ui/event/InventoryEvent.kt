@@ -5,6 +5,8 @@ sealed interface InventoryEvent {
 
     object OnScanButtonClickedFromInventory : InventoryEvent
 
+    object OnScannerConsumed: InventoryEvent
+
     object OnInventoryNextPage: InventoryEvent
     object OnInventoryPreviousPage: InventoryEvent
     object OnInventoryFirstPage: InventoryEvent
