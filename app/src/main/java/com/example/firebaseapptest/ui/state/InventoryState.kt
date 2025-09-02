@@ -1,6 +1,6 @@
 package com.example.firebaseapptest.ui.state
 
-import com.example.firebaseapptest.data.local.entity.ItemForSale
+import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 
 data class InventoryState(
     val items : List<ItemForSale> = emptyList(),
