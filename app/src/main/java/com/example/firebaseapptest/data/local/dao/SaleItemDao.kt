@@ -12,37 +12,39 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SaleItemDao {
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSaleItems(saleItems: List<SaleItem>): List<Long>
+    /*
     // 🆕 Create
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-     fun insertSaleItem(saleItem: SaleItem): Long
+    suspend fun insertSaleItem(saleItem: SaleItem): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-     fun insertSaleItems(saleItems: List<SaleItem>): List<Long>
 
     // 📖 Read
     @Query("SELECT * FROM sale_items WHERE id = :id LIMIT 1")
-     fun getSaleItemById(id: Int): SaleItem?
+    fun getSaleItemById(id: Int): SaleItem?
 
     @Query("SELECT * FROM sale_items WHERE sale_id = :saleId")
-     fun getSaleItemsBySaleId(saleId: Int): Flow<List<SaleItem>>
+    fun getSaleItemsBySaleId(saleId: Int): Flow<List<SaleItem>>
 
     @Query("SELECT * FROM sale_items")
      fun getAllSaleItems(): Flow<List<SaleItem>>
 
     // ✏️ Update
     @Update
-     fun updateSaleItem(saleItem: SaleItem): Int
+    suspend fun updateSaleItem(saleItem: SaleItem): Int
 
     @Update
-     fun updateSaleItems(saleItems: List<SaleItem>): Int
+    suspend fun updateSaleItems(saleItems: List<SaleItem>): Int
 
     // 🗑 Delete
     @Delete
-     fun deleteSaleItem(saleItem: SaleItem): Int
+    suspend fun deleteSaleItem(saleItem: SaleItem): Int
 
     @Query("DELETE FROM sale_items WHERE id = :id")
-     fun deleteSaleItemById(id: Int): Int
+    suspend fun deleteSaleItemById(id: Int): Int
 
     @Query("DELETE FROM sale_items WHERE sale_id = :saleId")
-     fun deleteBySaleId(saleId: Int): Int
+    suspend fun deleteBySaleId(saleId: Int): Int
+    */
 }
