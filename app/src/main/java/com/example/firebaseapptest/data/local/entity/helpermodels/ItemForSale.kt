@@ -1,4 +1,4 @@
-package com.example.firebaseapptest.data.local.entity
+package com.example.firebaseapptest.data.local.entity.helpermodels
 
 data class ItemForSale(
     val code: Long,

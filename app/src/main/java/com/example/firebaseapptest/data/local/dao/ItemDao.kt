@@ -5,7 +5,7 @@ import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Upsert
 import com.example.firebaseapptest.data.local.entity.Item
-import com.example.firebaseapptest.data.local.entity.ItemForSale
+import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import kotlinx.coroutines.flow.Flow
 
 @Dao
