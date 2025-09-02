@@ -6,6 +6,9 @@ import com.example.firebaseapptest.data.local.dao.SaleItemDao
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.SaleItem
+import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 class InventoryRepository @Inject constructor(
@@ -15,7 +18,6 @@ class InventoryRepository @Inject constructor(
 ) {
     suspend fun getItemByCodeForSale(code: Long) = itemDao.getItemByCodeForSale(code)
     suspend fun getItem(code: Long) = itemDao.getItemByCode(code)
-    fun getAllItems() = itemDao.getItems()
     suspend fun getItemsCount() = itemDao.getCount()
 
     fun getAllItemsPaginated(limit: Int, offset: Int) = itemDao.getItemsPaginated(limit, offset)
@@ -23,20 +25,30 @@ class InventoryRepository @Inject constructor(
     suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
     suspend fun deleteItem(item: Item?)  = if(item != null)itemDao.deleteItem(item) else Unit
 
-    fun getSales() = saleDao.getSales()
+    suspend fun getSaleCount() = saleDao.getCount()
+    suspend fun getSaleCountBetween(start: Long, end: Long) = saleDao.getCountBetween(start, end)
+    suspend fun getSaleCountToday(): Int {
+        val now = LocalDate.now()
+        val startOfDay = now.atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val endOfDay = now.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli() - 1
+        return saleDao.getCountBetween(startOfDay,endOfDay)
+    }
     fun getSalesPaginated(limit: Int, offset: Int) = saleDao.getSalesPaginated(limit,offset)
-    fun getTodaySales(startOfDay: Long, endOfDay: Long) = saleDao.getTodaySales(startOfDay,endOfDay)
+    fun getSalesBetween(startOfDay: Long, endOfDay: Long, limit: Int, offset: Int) = saleDao.getSalesBetween(startOfDay, endOfDay, limit, offset)
+    fun getTodaySalesPaginated(limit: Int, offset: Int): Flow<List<Sale>> {
+        val now = LocalDate.now()
+        val startOfDay = now.atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val endOfDay = now.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli() - 1
+
+        return saleDao.getSalesBetween(startOfDay, endOfDay, limit, offset)
+    }
+    suspend fun getSaleWithItems(saleId: Int) = saleDao.getSaleWithItemNames(saleId)
     suspend fun addSale(sale: Sale) = saleDao.addSale(sale)
     suspend fun deleteSale(sale: Sale) = saleDao.deleteSale(sale)
 
-    fun getSaleItems() = saleItemDao.getAllSaleItems()
-    fun getSaleItemById(id: Int) = saleItemDao.getSaleItemById(id)
-    fun getSaleItemsBySaleId(id: Int) = saleItemDao.getSaleItemsBySaleId(id)
-    fun addSaleItem(saleItem: SaleItem) = saleItemDao.insertSaleItem(saleItem)
-    fun addSaleItems(saleItems: List<SaleItem>) = saleItemDao.insertSaleItems(saleItems)
-    fun editSaleItem(saleItem: SaleItem) = saleItemDao.updateSaleItem(saleItem)
-    fun editSaleItems(saleItems: List<SaleItem>) = saleItemDao.updateSaleItems(saleItems)
-    fun deleteSaleItem(saleItem: SaleItem) = saleItemDao.deleteSaleItem(saleItem)
-    fun deleteSaleItemById(id: Int) = saleItemDao.deleteSaleItemById(id)
-    fun deleteBySaleId(saleId: Int) = saleItemDao.deleteBySaleId(saleId)
+    suspend fun addSaleItems(saleItems: List<SaleItem>) = saleItemDao.insertSaleItems(saleItems)
 }
