@@ -14,6 +14,9 @@ interface ItemDao {
     @Upsert
     suspend fun upsertItem(item: Item): Long
 
+    @Query("UPDATE items SET sold = sold + :amount WHERE code = :code")
+    suspend fun addSold(code: Long, amount: Int)
+
     @Delete
     suspend fun deleteItem(item: Item)
 
