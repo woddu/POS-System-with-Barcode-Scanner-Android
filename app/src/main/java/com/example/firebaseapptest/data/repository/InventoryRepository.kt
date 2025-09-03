@@ -23,6 +23,8 @@ class InventoryRepository @Inject constructor(
     fun getAllItemsPaginated(limit: Int, offset: Int) = itemDao.getItemsPaginated(limit, offset)
 
     suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
+
+    suspend fun itemSold(code: Long, amount: Int) = itemDao.addSold(code, amount)
     suspend fun deleteItem(item: Item?)  = if(item != null)itemDao.deleteItem(item) else Unit
 
     suspend fun getSaleCount() = saleDao.getCount()
