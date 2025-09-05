@@ -3,18 +3,18 @@ package com.example.firebaseapptest.ui.view.screen.inventory
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.BasicAlertDialog
@@ -36,9 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.InventoryState
+import com.example.firebaseapptest.ui.view.screen.Route
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,23 +48,24 @@ import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 fun Inventory(
     navigateToScanner: Boolean,
     state: InventoryState,
+    navController: NavController,
     onEvent: (InventoryEvent) -> Unit,
-    onNavigateToScanner: () -> Unit,
-    onNavigateToDetails: () -> Unit
 ){
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxSize()
+            .padding(12.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
+                .fillMaxHeight(.92f)
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
-                    .padding(8.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 TextField(
                     value = "Search",
@@ -81,25 +84,21 @@ fun Inventory(
                     Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item")
                 }
             }
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-
-                if (state.items.isEmpty()) {
-                    item {
-                        Text(
-                            text = "No items found",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        )
-                    }
-                } else {
-                    item { Spacer(modifier = Modifier.padding(top = 6.dp)) }
-                    items(state.items.size) { index ->
+            if (state.items.isEmpty()) {
+                Text(
+                    text = "No items found",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp)
+                ) {
+                    items(state.items, key = { item -> item.code }) { item ->
                         SimpleCard(
                             roundedCornerShape = 12.dp,
                             elevation = 8.dp
@@ -111,7 +110,7 @@ fun Inventory(
                                     .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
                             ) {
                                 Text(
-                                    text = state.items[index].name,
+                                    text = item.name,
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 24.sp,
@@ -123,13 +122,13 @@ fun Inventory(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "₱ " + state.items[index].price.toString(),
+                                        text = "₱ " + item.price.toString(),
                                         style = MaterialTheme.typography.labelLarge,
                                         fontSize = 24.sp,
                                     )
                                     IconButton(onClick = {
-                                        onEvent(InventoryEvent.OnInventoryItemDetails(state.items[index].code))
-                                        onNavigateToDetails()
+                                        onEvent(InventoryEvent.OnInventoryItemDetails(item.code))
+                                        navController.navigate(Route.InventoryDetails.path)
                                     }) {
                                         Icon(
                                             imageVector = Icons.Default.MoreVert,
@@ -139,6 +138,7 @@ fun Inventory(
                                 }
                             }
                         }
+
                     }
                 }
             }
@@ -149,6 +149,7 @@ fun Inventory(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
+                .fillMaxHeight()
         ) {
             IconButton(
                 onClick = { onEvent(InventoryEvent.OnInventoryPreviousPage) },
@@ -265,7 +266,8 @@ fun Inventory(
     // Side effect for navigation
     LaunchedEffect(navigateToScanner) {
         if (navigateToScanner) {
-            onNavigateToScanner()
+            navController.navigate(Route.Scanner.path)
+            onEvent(InventoryEvent.OnScannerConsumed)
         }
     }
 }
