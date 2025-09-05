@@ -26,13 +26,12 @@ import androidx.compose.ui.unit.sp
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.InventoryState
-import com.example.firebaseapptest.ui.view.screen.components.MyCardDefaults
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Details(
+fun ItemDetails(
     state: InventoryState,
     onEvent: (InventoryEvent) -> Unit,
     navigate: () -> Unit
@@ -124,6 +123,7 @@ fun Details(
             Button(onClick = {
                 if (state.itemCode.isNotEmpty() && state.itemName.isNotEmpty() && state.itemPrice.isNotEmpty()) {
                     onEvent(InventoryEvent.OnInventoryEditConfirmed)
+                    navigate()
                 } else {
 
                 }
