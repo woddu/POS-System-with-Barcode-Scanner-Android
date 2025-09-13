@@ -11,5 +11,7 @@ import java.time.LocalDateTime
 data class Sale(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val date: LocalDateTime,
-    val total: Double
+    val total: Double,
+    val paymentMethod: String,
+    val imageUri: String? = null
 )
