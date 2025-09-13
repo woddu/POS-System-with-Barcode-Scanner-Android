@@ -93,4 +93,9 @@ dependencies {
 
     implementation(libs.androidx.hilt.navigation.compose)
 
+
+    implementation("com.github.yalantis:ucrop:2.2.8")
+
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
 }
