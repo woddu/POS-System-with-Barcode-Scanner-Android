@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavBackStackEntry
-import com.example.firebaseapptest.ui.view.AppEvent
+import com.example.firebaseapptest.ui.event.AppEvent
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.BeepManager
 import com.journeyapps.barcodescanner.DecoratedBarcodeView

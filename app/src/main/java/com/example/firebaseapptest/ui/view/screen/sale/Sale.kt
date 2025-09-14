@@ -156,13 +156,21 @@ fun Sale(
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(.9f)
                 .padding(top = 8.dp)
         ) {
             if (state.sales.isEmpty())
-                item { Text("Empty") }
+                item {
+                    Text(
+                        text = "Empty",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                    )
+                }
             else
                 items(state.sales, key = { sale -> sale.id }) { sale ->
                     SimpleCard(
