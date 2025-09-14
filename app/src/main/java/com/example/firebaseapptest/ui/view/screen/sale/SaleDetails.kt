@@ -3,21 +3,30 @@ package com.example.firebaseapptest.ui.view.screen.sale
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.firebaseapptest.ui.state.AppState
+import java.io.File
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -48,6 +57,12 @@ fun SaleDetails(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp
+            )
+            Text(
+                text = "Payment: ${state.saleWithItemNames?.sale?.paymentMethod}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
             )
             Text(
                 text = "Total: ₱ ${state.saleWithItemNames?.sale?.total}",
@@ -88,6 +103,28 @@ fun SaleDetails(
                     thickness = 1.dp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            val imageFileExists = remember(state.imageUri) {
+                state.imageUri?.path?.let { File(it).exists() } ?: false
+            }
+            val context = LocalContext.current
+            if (imageFileExists) {
+
+                Text("Transaction: ")
+
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(state.imageUri)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Captured image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
             }
         }
     }
