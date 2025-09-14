@@ -1,9 +1,11 @@
 package com.example.firebaseapptest.ui.state
 
+import android.net.Uri
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.data.local.entity.helpermodels.SaleWithItemNames
 import com.example.firebaseapptest.ui.view.SalesFilter
+import java.io.File
 
 data class AppState(
     val items : List<ItemForSale> = emptyList(),
@@ -19,6 +21,12 @@ data class AppState(
 
     val  itemNotFound: Boolean = false,
 
+    val imageUri: Uri? = null,
+
+    val isImageCropped: Boolean = false,
+
+    val paymentMethod: String = "",
+
     val salesFilter: SalesFilter = SalesFilter.ALL,
     val startDate: Long? = null,
     val endDate: Long? = null,
@@ -26,6 +34,7 @@ data class AppState(
     val currentPage: Int = 1,
     val lastPage: Int = 1,
 
+    val tempImageFile: File? = null,
 
     val saleWithItemNames: SaleWithItemNames? = null
 )
