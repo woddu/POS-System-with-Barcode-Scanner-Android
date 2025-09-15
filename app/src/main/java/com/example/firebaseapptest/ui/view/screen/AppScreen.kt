@@ -2,13 +2,10 @@ package com.example.firebaseapptest.ui.view.screen
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -25,9 +22,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.firebaseapptest.R
+import com.example.firebaseapptest.ui.event.InventoryEvent
+import com.example.firebaseapptest.ui.state.InventoryState
 import com.example.firebaseapptest.ui.theme.FirebaseApptestTheme
-import com.example.firebaseapptest.ui.view.AppEvent
-import com.example.firebaseapptest.ui.view.AppState
+import com.example.firebaseapptest.ui.event.AppEvent
+import com.example.firebaseapptest.ui.state.AppState
+import com.example.firebaseapptest.ui.view.screen.inventory.ItemDetails
+import com.example.firebaseapptest.ui.view.screen.inventory.Inventory
+import com.example.firebaseapptest.ui.view.screen.sale.Sale
+import com.example.firebaseapptest.ui.view.screen.sale.SaleDetails
 
 data class BottomNavItems(
     val name: String,
@@ -39,14 +42,19 @@ data class BottomNavItems(
 sealed class Route(val path: String) {
     object Home : Route("home")
     object Inventory : Route("inventory")
+    object InventoryDetails : Route("inventoryDetails")
     object Sale : Route("sale")
+    object CaptureTransaction : Route("captureTransaction")
+    object SaleDetails : Route("saleDetails")
     object Scanner : Route("scanner")
 }
 
 @Composable
 fun AppScreen(
     state: AppState,
-    onEvent: (AppEvent) -> Unit
+    inventoryState: InventoryState,
+    onEvent: (AppEvent) -> Unit,
+    onInventoryEvent: (InventoryEvent) -> Unit
 ) {
     val navItems = listOf(
         BottomNavItems(
@@ -77,7 +85,9 @@ fun AppScreen(
         val currentRoute = navBackStackEntry.value?.destination?.route
         Scaffold(
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+
+                ) {
                     navItems.forEachIndexed { index, item ->
                         NavigationBarItem(
 
@@ -100,24 +110,7 @@ fun AppScreen(
                         )
                     }
                 }
-            },
-            floatingActionButton = {
-                when (currentRoute) {
-                    Route.Home.path -> {
-                        FloatingActionButton(onClick = { /* action for Home */ }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
-                        }
-                    }
-                    Route.Inventory.path -> {
-                        FloatingActionButton(onClick = { onEvent(AppEvent.OnInventoryAddButtonClicked) }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
-                        }
-                    }
-                    // If route not matched, show nothing
-                    else -> {}
-                }
-            },
-            floatingActionButtonPosition = FabPosition.End
+            }
         ) { innerPadding ->
             NavHost(
                 navController = navController,
@@ -125,25 +118,41 @@ fun AppScreen(
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Route.Home.path) {
-                    Home(state.scannedText, state.navigateToScanner, onEvent){
-                        navController.navigate(Route.Scanner.path)
-                    }
+                    Home(state, onEvent, navController)
                 }
 
                 composable(Route.Sale.path) {
-                    Text("Sale")
+                    Sale(state, onEvent, navController)
+                }
+
+                composable(Route.SaleDetails.path) {
+                    SaleDetails(state)
                 }
 
                 composable(Route.Inventory.path) {
-                    Text("Inventory")
+                    Inventory(
+                        state.navigateToScanner,
+                        inventoryState,
+                        navController,
+                        onInventoryEvent,
+                    )
+                }
+
+                composable(Route.InventoryDetails.path) {
+                    ItemDetails(inventoryState, onInventoryEvent) {
+                        navController.navigate(Route.Inventory.path)
+                    }
                 }
 
                 composable(Route.Scanner.path) { backStackEntry ->
                     Scanner(backStackEntry, onEvent){
-                        navController.navigate(Route.Home.path)
+                        navController.navigate(state.navigateBackTo)
                     }
                 }
 
+                composable(Route.CaptureTransaction.path) {
+                    CaptureTransactionAndCrop(state, onEvent, navController)
+                }
             }
         }
     }
