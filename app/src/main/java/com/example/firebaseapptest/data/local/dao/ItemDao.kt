@@ -29,6 +29,9 @@ interface ItemDao {
     @Query("SELECT code, name, price FROM items ORDER BY name LIMIT :limit OFFSET :offset")
     fun getItemsPaginated(limit: Int, offset: Int): Flow<List<ItemForSale>>
 
+    @Query("SELECT code, name, price FROM items WHERE name LIKE '%' || :searchQuery || '%' ORDER BY name LIMIT :limit OFFSET :offset ")
+    fun getSearchQueryPaginated(searchQuery: String, limit: Int, offset: Int): Flow<List<ItemForSale>>
+
     @Query("SELECT * FROM items WHERE code = :code")
     suspend fun getItemByCode(code: Long): Item?
 
