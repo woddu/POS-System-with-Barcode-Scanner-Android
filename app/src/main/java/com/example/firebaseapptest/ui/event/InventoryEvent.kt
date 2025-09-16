@@ -7,6 +7,8 @@ sealed interface InventoryEvent {
 
     object OnScannerConsumed: InventoryEvent
 
+    data class OnSearchQueryChanged(val searchTerm: String): InventoryEvent
+
     object OnInventoryNextPage: InventoryEvent
     object OnInventoryPreviousPage: InventoryEvent
     object OnInventoryFirstPage: InventoryEvent
