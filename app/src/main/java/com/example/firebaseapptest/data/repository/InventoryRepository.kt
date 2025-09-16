@@ -22,6 +22,8 @@ class InventoryRepository @Inject constructor(
 
     fun getAllItemsPaginated(limit: Int, offset: Int) = itemDao.getItemsPaginated(limit, offset)
 
+    fun getSearchQueryPaginated(query: String, limit: Int, offset: Int) = itemDao.getSearchQueryPaginated(query, limit, offset)
+
     suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
 
     suspend fun itemSold(code: Long, amount: Int) = itemDao.addSold(code, amount)
