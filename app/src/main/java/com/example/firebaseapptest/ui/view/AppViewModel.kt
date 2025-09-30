@@ -1,70 +1,126 @@
 package com.example.firebaseapptest.ui.view
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseapptest.data.local.entity.Item
+import com.example.firebaseapptest.data.local.entity.Sale
+import com.example.firebaseapptest.data.local.entity.SaleItem
 import com.example.firebaseapptest.data.repository.InventoryRepository
+import com.example.firebaseapptest.ui.event.AppEvent
+import com.example.firebaseapptest.ui.event.InventoryEvent
+import com.example.firebaseapptest.ui.state.AppState
+import com.example.firebaseapptest.ui.state.InventoryState
 import com.example.firebaseapptest.ui.view.screen.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import android.util.Log
-import com.example.firebaseapptest.ui.event.InventoryEvent
-import com.example.firebaseapptest.ui.state.InventoryState
-import kotlinx.coroutines.flow.first
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val repository: InventoryRepository
 ) : ViewModel() {
-    private val inventoryPageSize = 20
-    private var _currentPage = MutableStateFlow(1)
-    private val _items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(pageNumber(_currentPage.value))).stateIn(
+    private val inventoryPageSize = 10
+    private val _searchQuery = MutableStateFlow("")
+    private var _inventoryCurrentPage = MutableStateFlow(1)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val _items = combine(_searchQuery, _inventoryCurrentPage) { query, page ->
+        query to page
+    }.flatMapLatest { (query, page) ->
+        if (query.isBlank()) {
+            repository.getAllItemsPaginated(inventoryPageSize, pageNumber(page))
+        } else {
+            repository.getSearchQueryPaginated(query, inventoryPageSize, pageNumber(page))
+        }
+    }.stateIn(
         viewModelScope,
-        SharingStarted.WhileSubscribed(),
+        SharingStarted.WhileSubscribed(5000),
         emptyList()
     )
 
-    private val _sales = repository.getSales().stateIn(
+    private val salePageSize = 10
+    private var _saleCurrentPage = MutableStateFlow(1)
+    private val _salesFilter = MutableStateFlow(SalesFilter.ALL)
+    private val _betweenDates = MutableStateFlow<Pair<Long, Long>?>(null)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val _sales: StateFlow<List<Sale>> = combine(_salesFilter, _saleCurrentPage, _betweenDates) { filter, page, between ->
+        Triple(filter, page, between)
+    }.flatMapLatest { (filter, page, between) ->
+        val offset = pageNumber(page) // your existing page offset logic
+        when (filter) {
+            SalesFilter.ALL -> repository.getSalesPaginated(salePageSize, offset)
+            SalesFilter.TODAY -> repository.getTodaySalesPaginated(salePageSize, offset)
+            SalesFilter.BETWEEN -> {
+                val (start, end) = between ?: return@flatMapLatest flowOf(emptyList())
+                repository.getSalesBetween(start, end, salePageSize, offset)
+            }
+        }
+    }.stateIn(
         viewModelScope,
-        SharingStarted.WhileSubscribed(),
+        SharingStarted.WhileSubscribed(5000),
         emptyList()
     )
     private val _state = MutableStateFlow(AppState())
-    private val _inventoryState = MutableStateFlow(InventoryState())
-
-    val state = combine(_state, _sales){state, sales ->
+    val state = combine(_state, _sales, _saleCurrentPage){state, sales, saleCurrentPage->
         state.copy(
-            sales = sales
+            sales = sales,
+            currentPage = saleCurrentPage
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppState())
 
+
+    private val _inventoryState = MutableStateFlow(InventoryState())
     val inventoryState = combine(_inventoryState, _items){state, items ->
         state.copy(
             items = items
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InventoryState())
+
     private fun pageNumber(page: Int): Int{
         return (page - 1) * inventoryPageSize
     }
 
     init {
         viewModelScope.launch {
-            val totalCount = repository.getItemsCount()
-            val lastPageIndex = if (totalCount == 0) 0 else (totalCount - 1) / inventoryPageSize
-            val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(1)).first()
-            _inventoryState.update {
-                it.copy(
-                    currentPage = 1,
-                    items = items,
-                    lastPage = lastPageIndex + 1
-                )
-            }
+
+            val itemsTotalCount = repository.getItemsCount()
+            setItemsLastPage(itemsTotalCount)
+            val saleTotalCount = repository.getSaleCount()
+            setSaleLastPage(saleTotalCount)
+        }
+    }
+
+    private fun setItemsLastPage(itemsTotalCount: Int){
+        Log.d("ItemsTotalCount", itemsTotalCount.toString())
+        _inventoryState.update {
+            it.copy(
+                lastPage = if (itemsTotalCount <= inventoryPageSize) 1 else maxOf(1, ((itemsTotalCount + inventoryPageSize - 1) / inventoryPageSize))
+            )
+        }
+    }
+
+    private fun setSaleLastPage(saleTotalCount: Int){
+        Log.d("SaleTotalCount", saleTotalCount.toString())
+        _state.update {
+            it.copy(
+                lastPage = if (saleTotalCount <= salePageSize) 1 else maxOf(1, ((saleTotalCount + salePageSize - 1) / salePageSize))
+            )
         }
     }
 
@@ -83,9 +139,15 @@ class AppViewModel @Inject constructor(
 
                         _state.update {
                             it.copy(
-                                itemsInCounter = state.value.itemsInCounter + item
+                                itemsInCounter = if (item == null) state.value.itemsInCounter else state.value.itemsInCounter + item,
+                                itemsInCounterTotalPrice = if (item == null) state.value.itemsInCounterTotalPrice else state.value.itemsInCounterTotalPrice + item.price,
+                                itemNotFound = item == null
                             )
                         }
+
+                        delay(1000)
+                        _state.update { it.copy(itemNotFound = false) }
+
                     }
                 } else if (_state.value.navigateBackTo == Route.Inventory.path){
                     _inventoryState.update { it.copy(itemCode = event.text) }
@@ -96,11 +158,198 @@ class AppViewModel @Inject constructor(
                 _state.update { it.copy(navigateToScanner = false) }
             }
 
-            AppEvent.OnScanComplete -> {
+            is AppEvent.OnAddSale -> {
+                viewModelScope.launch{
+                    if (state.value.paymentMethod == "Cash"){
+                        val sale = Sale(
+                            date = LocalDateTime.now(),
+                            total = state.value.itemsInCounterTotalPrice,
+                            paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
+                            imageUri = null
+                        )
+                        val saleId = repository.addSale(sale)
+                        val saleItems = state.value.itemsInCounter
+                            .groupingBy { it.code }
+                            .eachCount()
+                            .map { (code, quantity) ->
+                                val item = state.value.itemsInCounter.first { it.code == code }
+                                SaleItem(
+                                    saleId = saleId.toInt(),
+                                    itemCode = item.code,
+                                    price = item.price,
+                                    quantity = quantity
+                                )
+                            }
+                        repository.addSaleItems(saleItems)
+                        saleItems.forEach { saleItems ->
+                            repository.itemSold(saleItems.itemCode, saleItems.quantity)
+                        }
+                    } else if (state.value.paymentMethod != "Cash" && state.value.isImageCropped && state.value.imageUri != null) {
 
+                        val inputStream = event.context.contentResolver.openInputStream(state.value.imageUri!!)
+                        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                        val destFile =
+                            File(event.context.filesDir, "sale_$timestamp.jpg")
+                        val outputStream = FileOutputStream(destFile)
+                        inputStream?.copyTo(outputStream)
+                        inputStream?.close()
+                        outputStream.close()
+
+                        val permanentUri = Uri.fromFile(destFile)
+
+                        val sale = Sale(
+                            date = LocalDateTime.now(),
+                            total = state.value.itemsInCounterTotalPrice,
+                            paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
+                            imageUri = permanentUri.toString()
+                        )
+                        val saleId = repository.addSale(sale)
+                        val saleItems = state.value.itemsInCounter
+                            .groupingBy { it.code }
+                            .eachCount()
+                            .map { (code, quantity) ->
+                                val item = state.value.itemsInCounter.first { it.code == code }
+                                SaleItem(
+                                    saleId = saleId.toInt(),
+                                    itemCode = item.code,
+                                    price = item.price,
+                                    quantity = quantity
+                                )
+                            }
+                        repository.addSaleItems(saleItems)
+                        saleItems.forEach { saleItems ->
+                            repository.itemSold(saleItems.itemCode, saleItems.quantity)
+                        }
+
+
+                        state.value.tempImageFile?.delete()
+                        _state.update {
+                            it.copy(
+                                itemsInCounter = emptyList(),
+                                itemsInCounterTotalPrice = 0.0,
+                                imageUri = null,
+                                isImageCropped = false
+                            )
+                        }
+                    }
+                }
+            }
+
+            AppEvent.OnCancelSale -> {
+                state.value.tempImageFile?.delete()
+                _state.update {
+                    it.copy(
+                        itemsInCounter = emptyList(),
+                        itemsInCounterTotalPrice = 0.0,
+                        imageUri = null,
+                        isImageCropped = false,
+                        paymentMethod = "",
+                        tempImageFile = null
+                    )
+                }
+            }
+
+            is AppEvent.OnSaleDetails -> {
+                viewModelScope.launch {
+                    val saleWithItems = repository.getSaleWithItems(event.saleId)
+                    _state.update {
+                        it.copy(
+                            saleWithItemNames = saleWithItems,
+                            imageUri = saleWithItems.sale.imageUri?.let{ Uri.parse(it) },
+                        )
+                    }
+                }
+            }
+
+            is AppEvent.OnFilterSales -> {
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            salesFilter = event.salesFilter
+                        )
+                    }
+                    if (event.salesFilter == SalesFilter.BETWEEN && event.betweenDates != null) {
+                        _salesFilter.update { event.salesFilter }
+                        _betweenDates.update { event.betweenDates }
+                        _state.update {
+                            it.copy(
+                                startDate = event.betweenDates.first,
+                                endDate = event.betweenDates.second
+                            )
+                        }
+                        val totalCount = repository.getSaleCountBetween(
+                            event.betweenDates.first,
+                            event.betweenDates.second
+                        )
+                        setSaleLastPage(totalCount)
+                    } else {
+                        _salesFilter.update { event.salesFilter }
+                        _betweenDates.update { null }
+                        _state.update {
+                            it.copy(
+                                startDate = null,
+                                endDate = null
+                            )
+                        }
+                    }
+
+                    if (event.salesFilter == SalesFilter.ALL){
+                        val totalCount = repository.getSaleCount()
+                        setSaleLastPage(totalCount)
+                    } else if(event.salesFilter == SalesFilter.TODAY){
+                        val totalCount = repository.getSaleCountToday()
+                        setSaleLastPage(totalCount)
+                    }
+
+                    _saleCurrentPage.update { 1 }
+                    _state.update {
+                        it.copy(
+                            currentPage = 1
+                        )
+                    }
+                }
+            }
+
+            is AppEvent.OnImageCropped -> {
+                _state.update { it.copy(
+                    imageUri = event.uri,
+                    isImageCropped = true
+                ) }
+            }
+            is AppEvent.OnImageUriChanged -> {
+                viewModelScope.launch {
+                    if (event.uri == null) {
+                        state.value.imageUri?.path?.let { path ->
+                            val file = File(path)
+                            if (file.exists()) file.delete()
+                        }
+                        state.value.tempImageFile?.delete()
+                        _state.update {
+                            it.copy(
+                                imageUri = event.uri,
+                                paymentMethod = "",
+                                isImageCropped = false,
+                                tempImageFile = null
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(
+                                imageUri = event.uri
+                            )
+                        }
+                    }
+                }
+            }
+
+            is AppEvent.OnChoosePaymentMethod -> {
+                _state.update{ it.copy(paymentMethod = event.method) }
+            }
+
+            is AppEvent.OnTempImageFileCreated -> {
+                _state.update { it.copy(tempImageFile = event.photoFile) }
             }
         }
-
     }
 
     fun onInventoryEvent(
@@ -153,7 +402,6 @@ class AppViewModel @Inject constructor(
                         sold = if (inventoryState.value.itemSold.isEmpty()) 0 else inventoryState.value.itemSold.toInt()
                     )
                     repository.upsertItem(item)
-                    _inventoryState.update { it.copy(showFormDialog = false) }
                     _inventoryState.update {
                         it.copy(
                             itemName = "",
@@ -163,9 +411,12 @@ class AppViewModel @Inject constructor(
                             itemColor = "",
                             itemCode = "",
                             itemSize = "",
-                            itemSold = ""
+                            itemSold = "",
+                            showFormDialog = false
                         )
                     }
+                    val totalCount = repository.getItemsCount()
+                    setItemsLastPage(totalCount)
                 }
             }
             is InventoryEvent.OnInventorySetItemCode -> {
@@ -198,14 +449,14 @@ class AppViewModel @Inject constructor(
                     val item = repository.getItem(event.code)
                     _inventoryState.update {
                         it.copy(
-                            itemCode = item.code.toString(),
-                            itemName = item.name,
-                            itemPrice = item.price.toString(),
-                            itemQuantity = item.quantity.toString(),
-                            itemDescription = if (item.description.isNullOrEmpty()) "" else item.description,
-                            itemColor = if (item.color.isNullOrEmpty()) "" else item.color,
-                            itemSize = if (item.size.isNullOrEmpty()) "" else item.size,
-                            itemSold = item.sold.toString()
+                            itemCode = item?.code.toString(),
+                            itemName = item?.name.toString(),
+                            itemPrice = item?.price.toString(),
+                            itemQuantity = item?.quantity.toString(),
+                            itemDescription = if (item?.description.isNullOrEmpty()) "" else item.description,
+                            itemColor = if (item?.color.isNullOrEmpty()) "" else item.color,
+                            itemSize = if (item?.size.isNullOrEmpty()) "" else item.size,
+                            itemSold = item?.sold.toString()
                         )
                     }
                 }
@@ -229,6 +480,8 @@ class AppViewModel @Inject constructor(
                         itemSize = "",
                         itemSold = ""
                     ) }
+                    val totalCount = repository.getItemsCount()
+                    setItemsLastPage(totalCount)
 
                 }
             }
@@ -250,19 +503,6 @@ class AppViewModel @Inject constructor(
                         quantity = if (inventoryState.value.itemQuantity.isEmpty()) 0 else inventoryState.value.itemQuantity.toInt()
                     )
                     repository.upsertItem(item)
-                    _inventoryState.update {
-                        it.copy(
-                            showFormDialog = false,
-                            itemName = "",
-                            itemPrice = "",
-                            itemQuantity = "",
-                            itemDescription = "",
-                            itemColor = "",
-                            itemCode = "",
-                            itemSize = "",
-                            itemSold = ""
-                        )
-                    }
                 }
             }
 
@@ -275,22 +515,21 @@ class AppViewModel @Inject constructor(
                             items = items
                         )
                     }
-                    _currentPage.update { inventoryState.value.currentPage }
+                    _inventoryCurrentPage.update { inventoryState.value.currentPage }
                 }
             }
             InventoryEvent.OnInventoryLastPage -> {
                 viewModelScope.launch {
                     val totalCount = repository.getItemsCount()
-                    val lastPageIndex = if (totalCount == 0) 0 else (totalCount - 1) / inventoryPageSize
+                    val lastPageIndex = maxOf(1, ((totalCount + inventoryPageSize - 1) / inventoryPageSize))
                     val items = repository.getAllItemsPaginated(inventoryPageSize, pageNumber(lastPageIndex)).first()
                     _inventoryState.update {
                         it.copy(
-                            currentPage = lastPageIndex + 1,
-                            items = items,
-                            lastPage = lastPageIndex + 1
+                            currentPage = state.value.lastPage,
+                            items = items
                         )
                     }
-                    _currentPage.update { inventoryState.value.currentPage }
+                    _inventoryCurrentPage.update { inventoryState.value.lastPage }
                 }
             }
             InventoryEvent.OnInventoryNextPage -> {
@@ -303,7 +542,7 @@ class AppViewModel @Inject constructor(
                             items = items
                         )
                     }
-                    _currentPage.update { inventoryState.value.currentPage }
+                    _inventoryCurrentPage.update { inventoryState.value.currentPage }
                 }
             }
             is InventoryEvent.OnInventoryPageChanged -> {
@@ -315,7 +554,7 @@ class AppViewModel @Inject constructor(
                             items = items
                         )
                     }
-                    _currentPage.update { inventoryState.value.currentPage }
+                    _inventoryCurrentPage.update { inventoryState.value.currentPage }
                 }
             }
             InventoryEvent.OnInventoryPreviousPage -> {
@@ -328,9 +567,17 @@ class AppViewModel @Inject constructor(
                             items = items
                         )
                     }
-                    _currentPage.update { inventoryState.value.currentPage }
+                    _inventoryCurrentPage.update { inventoryState.value.currentPage }
                 }
 
+            }
+
+            InventoryEvent.OnScannerConsumed -> {
+                _state.update { it.copy(navigateToScanner = false) }
+            }
+
+            is InventoryEvent.OnSearchQueryChanged -> {
+                _searchQuery.update { event.searchTerm }
             }
         }
     }
