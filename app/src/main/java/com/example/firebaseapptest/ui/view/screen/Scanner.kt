@@ -48,6 +48,8 @@ fun Scanner(backStackEntry: NavBackStackEntry, onEvent: (AppEvent) -> Unit, navi
             Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT)
                 .show()
             //onBack()
+        } else {
+            hasPermission.value = true
         }
     }
 
