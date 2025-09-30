@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "af743495ba221b76737c3f293579eb1b",
+    "identityHash": "0e332e9e531c65f4dfb62035baceaade",
     "entities": [
       {
         "tableName": "items",
@@ -61,7 +61,7 @@
       },
       {
         "tableName": "sales",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `total` REAL NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `total` REAL NOT NULL, `method` TEXT NOT NULL, `imageUri` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -80,6 +80,17 @@
             "columnName": "total",
             "affinity": "REAL",
             "notNull": true
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUri",
+            "columnName": "imageUri",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -178,7 +189,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'af743495ba221b76737c3f293579eb1b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0e332e9e531c65f4dfb62035baceaade')"
     ]
   }
 }
