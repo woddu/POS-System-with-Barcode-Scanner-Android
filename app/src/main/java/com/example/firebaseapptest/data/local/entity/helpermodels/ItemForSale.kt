@@ -4,4 +4,5 @@ data class ItemForSale(
     val code: Long,
     val name: String,
     val price: Double,
+    val discount: Double,
 )
