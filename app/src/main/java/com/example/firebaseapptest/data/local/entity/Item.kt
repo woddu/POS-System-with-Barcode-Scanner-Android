@@ -13,4 +13,5 @@ data class Item(
     val size: String? = "",
     val quantity: Int? = 0,
     val sold: Int? = 0,
+    val discount: Double? = 0.0,
 )
