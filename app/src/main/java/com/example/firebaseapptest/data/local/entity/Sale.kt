@@ -13,7 +13,6 @@ data class Sale(
     val date: LocalDateTime,
     val total: Double,
     val paymentMethod: String,
-    val imageUri: String? = null,
     val amountPaid: Double,
     val change : Double
 )
