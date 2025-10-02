@@ -27,6 +27,9 @@ data class AppState(
 
     val paymentMethod: String = "",
 
+    val amountPaid: Double = 0.0,
+    val change: Double = 0.0,
+
     val salesFilter: SalesFilter = SalesFilter.ALL,
     val startDate: Long? = null,
     val endDate: Long? = null,
