@@ -165,7 +165,8 @@ class AppViewModel @Inject constructor(
                             date = LocalDateTime.now(),
                             total = state.value.itemsInCounterTotalPrice,
                             paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
-                            imageUri = null
+                            amountPaid = state.value.amountPaid,
+                            change = state.value.change
                         )
                         val saleId = repository.addSale(sale)
                         val saleItems = state.value.itemsInCounter
@@ -177,7 +178,8 @@ class AppViewModel @Inject constructor(
                                     saleId = saleId.toInt(),
                                     itemCode = item.code,
                                     price = item.price,
-                                    quantity = quantity
+                                    quantity = quantity,
+                                    discount = item.discount
                                 )
                             }
                         repository.addSaleItems(saleItems)
@@ -201,7 +203,8 @@ class AppViewModel @Inject constructor(
                             date = LocalDateTime.now(),
                             total = state.value.itemsInCounterTotalPrice,
                             paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
-                            imageUri = permanentUri.toString()
+                            amountPaid = state.value.amountPaid,
+                            change = state.value.change
                         )
                         val saleId = repository.addSale(sale)
                         val saleItems = state.value.itemsInCounter
@@ -213,7 +216,8 @@ class AppViewModel @Inject constructor(
                                     saleId = saleId.toInt(),
                                     itemCode = item.code,
                                     price = item.price,
-                                    quantity = quantity
+                                    quantity = quantity,
+                                    discount = item.discount
                                 )
                             }
                         repository.addSaleItems(saleItems)
@@ -255,7 +259,6 @@ class AppViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             saleWithItemNames = saleWithItems,
-                            imageUri = saleWithItems.sale.imageUri?.let{ Uri.parse(it) },
                         )
                     }
                 }
