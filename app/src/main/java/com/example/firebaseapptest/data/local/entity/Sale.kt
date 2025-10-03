@@ -13,6 +13,8 @@ data class Sale(
     val date: LocalDateTime,
     val total: Double,
     val paymentMethod: String,
-    val amountPaid: Double,
-    val change : Double
+    val amountPaidCash: Double,
+    val amountPaidGCash: Double,
+    val change : Double,
+    val gCashReference : String = ""
 )
