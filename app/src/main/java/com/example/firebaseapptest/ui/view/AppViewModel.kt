@@ -137,6 +137,15 @@ class AppViewModel @Inject constructor(
                     viewModelScope.launch {
                         val item = repository.getItemByCodeForSale(event.text.toLong())
 
+                        if (item != null){
+                            if (item.isDiscountPercentage){
+                                item.price.minus((item.price.times(item.discount)))
+                            }
+                            else {
+                                item.price.minus(item.discount)
+                            }
+                        }
+
                         _state.update {
                             it.copy(
                                 itemsInCounter = if (item == null) state.value.itemsInCounter else state.value.itemsInCounter + item,
@@ -154,87 +163,67 @@ class AppViewModel @Inject constructor(
                 }
 
             }
+
+            is AppEvent.OnItemCodeTyped -> {
+                viewModelScope.launch {
+                    val item = repository.getItemByCodeForSale(event.code.toLong())
+
+                    if (item != null){
+                        if (item.isDiscountPercentage){
+                            item.price.minus((item.price.times(item.discount)))
+                        }
+                        else {
+                            item.price.minus(item.discount)
+                        }
+                    }
+
+                    _state.update {
+                        it.copy(
+                            itemsInCounter = if (item == null) state.value.itemsInCounter else state.value.itemsInCounter + item,
+                            itemsInCounterTotalPrice = if (item == null) state.value.itemsInCounterTotalPrice else state.value.itemsInCounterTotalPrice + item.price,
+                            itemNotFound = item == null
+                        )
+                    }
+
+                    delay(1000)
+                    _state.update { it.copy(itemNotFound = false) }
+
+                }
+            }
+
             AppEvent.OnScannerConsumed -> {
                 _state.update { it.copy(navigateToScanner = false) }
             }
 
             is AppEvent.OnAddSale -> {
                 viewModelScope.launch{
-                    if (state.value.paymentMethod == "Cash"){
-                        val sale = Sale(
-                            date = LocalDateTime.now(),
-                            total = state.value.itemsInCounterTotalPrice,
-                            paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
-                            amountPaid = state.value.amountPaid,
-                            change = state.value.change
-                        )
-                        val saleId = repository.addSale(sale)
-                        val saleItems = state.value.itemsInCounter
-                            .groupingBy { it.code }
-                            .eachCount()
-                            .map { (code, quantity) ->
-                                val item = state.value.itemsInCounter.first { it.code == code }
-                                SaleItem(
-                                    saleId = saleId.toInt(),
-                                    itemCode = item.code,
-                                    price = item.price,
-                                    quantity = quantity,
-                                    discount = item.discount
-                                )
-                            }
-                        repository.addSaleItems(saleItems)
-                        saleItems.forEach { saleItems ->
-                            repository.itemSold(saleItems.itemCode, saleItems.quantity)
-                        }
-                    } else if (state.value.paymentMethod != "Cash" && state.value.isImageCropped && state.value.imageUri != null) {
 
-                        val inputStream = event.context.contentResolver.openInputStream(state.value.imageUri!!)
-                        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                        val destFile =
-                            File(event.context.filesDir, "sale_$timestamp.jpg")
-                        val outputStream = FileOutputStream(destFile)
-                        inputStream?.copyTo(outputStream)
-                        inputStream?.close()
-                        outputStream.close()
-
-                        val permanentUri = Uri.fromFile(destFile)
-
-                        val sale = Sale(
-                            date = LocalDateTime.now(),
-                            total = state.value.itemsInCounterTotalPrice,
-                            paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
-                            amountPaid = state.value.amountPaid,
-                            change = state.value.change
-                        )
-                        val saleId = repository.addSale(sale)
-                        val saleItems = state.value.itemsInCounter
-                            .groupingBy { it.code }
-                            .eachCount()
-                            .map { (code, quantity) ->
-                                val item = state.value.itemsInCounter.first { it.code == code }
-                                SaleItem(
-                                    saleId = saleId.toInt(),
-                                    itemCode = item.code,
-                                    price = item.price,
-                                    quantity = quantity,
-                                    discount = item.discount
-                                )
-                            }
-                        repository.addSaleItems(saleItems)
-                        saleItems.forEach { saleItems ->
-                            repository.itemSold(saleItems.itemCode, saleItems.quantity)
-                        }
-
-
-                        state.value.tempImageFile?.delete()
-                        _state.update {
-                            it.copy(
-                                itemsInCounter = emptyList(),
-                                itemsInCounterTotalPrice = 0.0,
-                                imageUri = null,
-                                isImageCropped = false
+                    val sale = Sale(
+                        date = LocalDateTime.now(),
+                        total = state.value.itemsInCounterTotalPrice,
+                        paymentMethod = state.value.paymentMethod.ifEmpty { "Cash" },
+                        amountPaidCash = state.value.amountPaidCash.toDouble(),
+                        amountPaidGCash = state.value.amountPaidGCash.toDouble(),
+                        change = state.value.change.toDouble()
+                    )
+                    val saleId = repository.addSale(sale)
+                    val saleItems = state.value.itemsInCounter
+                        .groupingBy { it.code }
+                        .eachCount()
+                        .map { (code, quantity) ->
+                            val item = state.value.itemsInCounter.first { it.code == code }
+                            SaleItem(
+                                saleId = saleId.toInt(),
+                                itemCode = item.code,
+                                price = item.price,
+                                quantity = quantity,
+                                discount = item.discount,
+                                isDiscountPercentage = item.isDiscountPercentage
                             )
                         }
+                    repository.addSaleItems(saleItems)
+                    saleItems.forEach { saleItem ->
+                        repository.itemSold(saleItem.itemCode, saleItem.quantity)
                     }
                 }
             }
@@ -346,11 +335,26 @@ class AppViewModel @Inject constructor(
             }
 
             is AppEvent.OnChoosePaymentMethod -> {
-                _state.update{ it.copy(paymentMethod = event.method) }
+                _state.update{ it.copy(
+                    paymentMethod = event.method,
+                    isPaymentMethodChosen = true
+                ) }
             }
 
             is AppEvent.OnTempImageFileCreated -> {
                 _state.update { it.copy(tempImageFile = event.photoFile) }
+            }
+
+            is AppEvent.OnAmountPaidChanged -> {
+                if(event.isGash){
+                    _state.update { it.copy(amountPaidGCash = event.amount) }
+                } else {
+                    _state.update { it.copy(amountPaidCash = event.amount) }
+                }
+            }
+
+            is AppEvent.OnGCashReferenceChanged -> {
+                _state.update{ it.copy(gCashReference = event.reference) }
             }
         }
     }
