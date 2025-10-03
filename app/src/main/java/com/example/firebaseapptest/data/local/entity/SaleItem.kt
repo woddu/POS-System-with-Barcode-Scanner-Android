@@ -30,5 +30,6 @@ data class SaleItem(
     @ColumnInfo(name = "item_code") val itemCode: Long,
     val quantity: Int,
     val price: Double,
-    val discount: Double
+    val discount: Double,
+    val isDiscountPercentage: Boolean
 )
