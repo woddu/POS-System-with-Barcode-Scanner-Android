@@ -17,10 +17,16 @@ sealed interface AppEvent {
 
     data class OnChoosePaymentMethod(val method: String): AppEvent
 
-    data class OnAddSale(val context: Context): AppEvent
+    object OnAddSale: AppEvent
 
     object OnCancelSale: AppEvent
 
     data class OnFilterSales(val salesFilter: SalesFilter, val betweenDates: Pair<Long, Long>?): AppEvent
     data class OnSaleDetails(val saleId: Int) : AppEvent
+
+    data class OnAmountPaidChanged(val amount: String, val isGash: Boolean) : AppEvent
+
+    data class OnGCashReferenceChanged(val reference: String) : AppEvent
+
+    data class OnItemCodeTyped(val code: String) : AppEvent
 }
