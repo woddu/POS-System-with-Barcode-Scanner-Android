@@ -25,10 +25,15 @@ data class AppState(
 
     val isImageCropped: Boolean = false,
 
+    val isPaymentMethodChosen: Boolean= false,
+
     val paymentMethod: String = "",
 
-    val amountPaid: Double = 0.0,
-    val change: Double = 0.0,
+    val amountPaidCash: String = "0",
+    val amountPaidGCash: String = "0",
+    val change: String = "0",
+
+    val gCashReference: String = "",
 
     val salesFilter: SalesFilter = SalesFilter.ALL,
     val startDate: Long? = null,
