@@ -5,4 +5,5 @@ data class ItemForSale(
     val name: String,
     val price: Double,
     val discount: Double,
+    val isDiscountPercentage: Boolean
 )
