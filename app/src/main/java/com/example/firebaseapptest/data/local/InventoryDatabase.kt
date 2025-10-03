@@ -11,7 +11,7 @@ import com.example.firebaseapptest.data.local.entity.SaleItem
 
 @Database(
     entities = [Item::class, Sale::class, SaleItem::class],
-    version = 4
+    version = 6
 )
 abstract class InventoryDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
