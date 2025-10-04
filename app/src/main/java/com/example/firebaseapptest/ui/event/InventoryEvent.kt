@@ -25,6 +25,8 @@ sealed interface InventoryEvent {
     data class OnInventorySetItemCode(val code: String): InventoryEvent
     data class OnInventorySetItemSize(val size: String): InventoryEvent
     data class OnInventorySetItemSold(val sold: String): InventoryEvent
+    data class OnInventorySetItemDiscount(val discount: String): InventoryEvent
+    object OnInventorySetItemIsDiscountPercentage: InventoryEvent
     object OnInventoryAddConfirmed: InventoryEvent
 
     data class OnInventoryItemDetails(val code: Long): InventoryEvent

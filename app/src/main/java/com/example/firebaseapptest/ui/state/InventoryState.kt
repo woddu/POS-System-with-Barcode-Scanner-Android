@@ -18,6 +18,8 @@ data class InventoryState(
     val itemCode: String = "",
     val itemSize: String = "",
     val itemSold: String = "",
+    val itemDiscount: String = "",
+    val itemIsDiscountPercentage: Boolean = false,
 
     val deleteConfirmationDialog: Boolean = false,
 )
