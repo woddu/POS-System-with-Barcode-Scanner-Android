@@ -139,7 +139,7 @@ class AppViewModel @Inject constructor(
 
                         if (item != null){
                             if (item.isDiscountPercentage){
-                                item.price.minus((item.price.times(item.discount)))
+                                item.price.minus( if(item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
                             }
                             else {
                                 item.price.minus(item.discount)
@@ -170,7 +170,7 @@ class AppViewModel @Inject constructor(
 
                     if (item != null){
                         if (item.isDiscountPercentage){
-                            item.price.minus((item.price.times(item.discount)))
+                            item.price.minus( if(item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
                         }
                         else {
                             item.price.minus(item.discount)
@@ -356,6 +356,10 @@ class AppViewModel @Inject constructor(
             is AppEvent.OnGCashReferenceChanged -> {
                 _state.update{ it.copy(gCashReference = event.reference) }
             }
+
+            AppEvent.OnPaymentMethodBack -> {
+                _state.update { it.copy(isPaymentMethodChosen = false) }
+            }
         }
     }
 
@@ -378,7 +382,9 @@ class AppViewModel @Inject constructor(
                     itemColor = "",
                     itemCode = "",
                     itemSize = "",
-                    itemSold = ""
+                    itemSold = "",
+                    itemDiscount = "",
+                    itemIsDiscountPercentage = false
                 ) }
             }
 
@@ -392,7 +398,9 @@ class AppViewModel @Inject constructor(
                     itemColor = "",
                     itemCode = "",
                     itemSize = "",
-                    itemSold = ""
+                    itemSold = "",
+                    itemDiscount = "",
+                    itemIsDiscountPercentage = false
                 ) }
             }
 
@@ -402,11 +410,13 @@ class AppViewModel @Inject constructor(
                         code = inventoryState.value.itemCode.toLong(),
                         name = inventoryState.value.itemName,
                         price = inventoryState.value.itemPrice.toDouble(),
-                        quantity = if (inventoryState.value.itemQuantity.isEmpty()) 0 else inventoryState.value.itemQuantity.toInt(),
                         description = inventoryState.value.itemDescription,
                         color = inventoryState.value.itemColor,
                         size = inventoryState.value.itemSize,
-                        sold = if (inventoryState.value.itemSold.isEmpty()) 0 else inventoryState.value.itemSold.toInt()
+                        sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
+                        quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
+                        discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
+                        isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
                     )
                     repository.upsertItem(item)
                     _inventoryState.update {
@@ -419,6 +429,8 @@ class AppViewModel @Inject constructor(
                             itemCode = "",
                             itemSize = "",
                             itemSold = "",
+                            itemDiscount = "",
+                            itemIsDiscountPercentage = false,
                             showFormDialog = false
                         )
                     }
@@ -463,7 +475,9 @@ class AppViewModel @Inject constructor(
                             itemDescription = if (item?.description.isNullOrEmpty()) "" else item.description,
                             itemColor = if (item?.color.isNullOrEmpty()) "" else item.color,
                             itemSize = if (item?.size.isNullOrEmpty()) "" else item.size,
-                            itemSold = item?.sold.toString()
+                            itemSold = item?.sold.toString(),
+                            itemDiscount = item?.discount.toString(),
+                            itemIsDiscountPercentage = item?.isDiscountPercentage ?: false
                         )
                     }
                 }
@@ -485,7 +499,9 @@ class AppViewModel @Inject constructor(
                         itemColor = "",
                         itemCode = "",
                         itemSize = "",
-                        itemSold = ""
+                        itemSold = "",
+                        itemDiscount = "",
+                        itemIsDiscountPercentage = false
                     ) }
                     val totalCount = repository.getItemsCount()
                     setItemsLastPage(totalCount)
@@ -506,8 +522,10 @@ class AppViewModel @Inject constructor(
                         description = inventoryState.value.itemDescription,
                         color = inventoryState.value.itemColor,
                         size = inventoryState.value.itemSize,
-                        sold = if (inventoryState.value.itemSold.isEmpty()) 0 else inventoryState.value.itemSold.toInt(),
-                        quantity = if (inventoryState.value.itemQuantity.isEmpty()) 0 else inventoryState.value.itemQuantity.toInt()
+                        sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
+                        quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
+                        discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
+                        isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
                     )
                     repository.upsertItem(item)
                 }
@@ -585,6 +603,13 @@ class AppViewModel @Inject constructor(
 
             is InventoryEvent.OnSearchQueryChanged -> {
                 _searchQuery.update { event.searchTerm }
+            }
+
+            is InventoryEvent.OnInventorySetItemDiscount -> {
+                _inventoryState.update { it.copy(itemDiscount = event.discount) }
+            }
+            InventoryEvent.OnInventorySetItemIsDiscountPercentage -> {
+                _inventoryState.update { it.copy(itemIsDiscountPercentage = !inventoryState.value.itemIsDiscountPercentage) }
             }
         }
     }
