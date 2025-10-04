@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -120,12 +122,35 @@ fun ItemDetails(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            TextField(
+                value = state.itemDiscount,
+                onValueChange = { newValue ->
+                    val filteredValue = newValue.filter { it.isDigit() }
+                    onEvent(InventoryEvent.OnInventorySetItemDiscount(filteredValue))
+                },
+                label = { Text("Discount") },
+                suffix = { if(state.itemIsDiscountPercentage) Text("%") else Text("₱") },
+                modifier = Modifier.fillMaxWidth(.5f)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = state.itemIsDiscountPercentage,
+                    onCheckedChange = { onEvent(InventoryEvent.OnInventorySetItemIsDiscountPercentage) }
+                )
+                Text("Percentage")
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Button(onClick = {
                 if (state.itemCode.isNotEmpty() && state.itemName.isNotEmpty() && state.itemPrice.isNotEmpty()) {
                     onEvent(InventoryEvent.OnInventoryEditConfirmed)
                     navigate()
-                } else {
-
                 }
             }) {
                 Text("Edit")
@@ -142,6 +167,7 @@ fun ItemDetails(
                 Text("Delete")
             }
         }
+
     }
     if (state.deleteConfirmationDialog){
         BasicAlertDialog(
@@ -149,7 +175,9 @@ fun ItemDetails(
         ) {
             SimpleCard {
                 Column(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .padding(vertical = 20.dp)
                 ) {
                     Text(
                         text = "Are you sure you want to delete ${state.itemName}?",

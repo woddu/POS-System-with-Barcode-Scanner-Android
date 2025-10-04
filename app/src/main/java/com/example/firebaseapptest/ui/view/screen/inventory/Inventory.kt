@@ -21,11 +21,13 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -265,6 +267,31 @@ fun Inventory(
                                 modifier = Modifier.fillMaxWidth()
                             )
 
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            TextField(
+                                value = state.itemDiscount,
+                                onValueChange = { newValue ->
+                                    val filteredValue = newValue.filter { it.isDigit() }
+                                    onEvent(InventoryEvent.OnInventorySetItemDiscount(filteredValue))
+                                },
+                                label = { Text("Discount") },
+                                suffix = { if(state.itemIsDiscountPercentage) Text("%") else Text("₱") },
+                                modifier = Modifier.fillMaxWidth(.5f)
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Checkbox(
+                                    checked = state.itemIsDiscountPercentage,
+                                    onCheckedChange = { onEvent(InventoryEvent.OnInventorySetItemIsDiscountPercentage) }
+                                )
+                                Text("Percentage")
+                            }
                         }
                         Button(
                             onClick = {
