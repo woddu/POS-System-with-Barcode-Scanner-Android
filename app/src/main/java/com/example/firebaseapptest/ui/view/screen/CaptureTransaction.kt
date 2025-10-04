@@ -20,15 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,64 +49,12 @@ import com.yalantis.ucrop.UCrop
 import java.io.File
 
 @Composable
-fun CaptureTransactionAndCrop (
+fun CaptureTransactionAndCrop(
     state: AppState,
     onEvent: (AppEvent) -> Unit,
     navController: NavController
 ) {
-    val context = LocalContext.current
-
-    // Crop launcher (using uCrop)
-    val cropLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val resultUri = UCrop.getOutput(result.data!!)
-                resultUri?.let {
-                    onEvent(AppEvent.OnImageCropped(it))
-                }
-            }
-        }
-    )
-
-    fun launchCropper(sourceUri: Uri) {
-        val destinationUri = Uri.fromFile(File(context.cacheDir, "cropped_${System.currentTimeMillis()}.jpg"))
-        val intent = UCrop.of(sourceUri, destinationUri)
-            .withAspectRatio(1f, 1f)
-            .getIntent(context)
-        cropLauncher.launch(intent)
-    }
-
-    // Camera launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture(),
-        onResult = { success ->
-
-            if (!success) {
-                onEvent(AppEvent.OnImageUriChanged(null))
-            } else {
-                launchCropper(state.imageUri!!)
-            }
-        }
-    )
-
-
-
-    fun launchCamera() {
-        val photoFile = createTempImageFile(context)
-        val uri = FileProvider.getUriForFile(
-            context,
-            "com.example.firebaseapptest.provider",
-            photoFile
-        )
-        onEvent(AppEvent.OnTempImageFileCreated(photoFile))
-        onEvent(AppEvent.OnImageUriChanged(uri))
-        cameraLauncher.launch(uri)
-    }
-
-
-
-    if (state.imageUri == null) {
+    if (!state.isPaymentMethodChosen) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly,
@@ -116,35 +64,23 @@ fun CaptureTransactionAndCrop (
         ) {
             Button(onClick = {
                 onEvent(AppEvent.OnChoosePaymentMethod("Cash"))
-                onEvent(AppEvent.OnAddSale(context))
-                navController.navigate(Route.Home.path)
             }) {
                 Text("Cash")
             }
             Button(onClick = {
                 onEvent(AppEvent.OnChoosePaymentMethod("GCash"))
-                launchCamera()
+
             }) {
                 Text("GCash")
             }
             Button(onClick = {
                 onEvent(AppEvent.OnChoosePaymentMethod("Cash&GCash"))
-                launchCamera()
+
             }) {
                 Text("Cash & GCash")
             }
-            Button(onClick = {
-                onEvent(AppEvent.OnChoosePaymentMethod("Salmon"))
-                launchCamera()
-            }) {
-                Text("Salmon")
-            }
         }
-//            LaunchedEffect(state.imageUri == null){
-//                launchCamera()
-//            }
     } else {
-        // Show preview + options
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
@@ -152,9 +88,6 @@ fun CaptureTransactionAndCrop (
                 .fillMaxHeight()
                 .padding(16.dp)
         ) {
-            val imageFileExists = remember(state.imageUri) {
-                state.imageUri.path?.let { File(it).exists() } ?: false
-            }
             LazyColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -172,20 +105,65 @@ fun CaptureTransactionAndCrop (
                     )
                 }
 
-                if (imageFileExists) {
+                if (state.paymentMethod == "Cash&GCash") {
                     item {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(state.imageUri)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Captured image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
+                        TextField(
+                            value = state.amountPaidCash,
+                            onValueChange = { newValue ->
+                                val filteredValue = newValue.filter { it.isDigit() }
+                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
+                            },
+                            label = { Text("Amount in Cash") },
                         )
+                    }
+
+                    item {
+                        TextField(
+                            value = state.amountPaidGCash,
+                            onValueChange = { newValue ->
+                                val filteredValue = newValue.filter { it.isDigit() }
+                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                            },
+                            label = { Text("Amount in GCash") },
+                        )
+                    }
+
+                    item {
+                        TextField(
+                            value = state.gCashReference,
+                            onValueChange = {
+                                onEvent(AppEvent.OnGCashReferenceChanged(it))
+                            },
+                            label = { Text("Reference") },
+                        )
+                    }
+                } else {
+                    item {
+                        TextField(
+                            value = if (state.paymentMethod == "GCash") state.amountPaidGCash else if (state.paymentMethod == "Cash") state.amountPaidCash else "",
+                            onValueChange = { newValue ->
+                                val filteredValue = newValue.filter { it.isDigit() }
+
+                                if (state.paymentMethod == "GCash") {
+                                    onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                                } else if (state.paymentMethod == "Cash") {
+                                    onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
+                                }
+                            },
+                            label = { Text("Amount") },
+                        )
+                    }
+
+                    if (state.paymentMethod == "GCash") {
+                        item {
+                            TextField(
+                                value = state.gCashReference,
+                                onValueChange = {
+                                    onEvent(AppEvent.OnGCashReferenceChanged(it))
+                                },
+                                label = { Text("Reference") },
+                            )
+                        }
                     }
                 }
 
@@ -208,28 +186,52 @@ fun CaptureTransactionAndCrop (
                     }
                 } else {
                     items(items, key = { item -> item.item.code }) { item ->
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Bottom,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 18.dp)
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = item.item.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 30.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.widthIn(max = 170.dp),
-                                maxLines = 1
-                            )
-                            Text(
-                                text = "₱ ${item.item.price} * ${item.quantity}",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 18.dp)
+                            ) {
+                                Text(
+                                    text = item.item.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 30.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 170.dp),
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "₱ ${item.item.price} * ${item.quantity}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
+                                )
+
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Discount",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (item.item.isDiscountPercentage) "" else "₱" + " ${item.item.discount}" + if (item.item.isDiscountPercentage) "%" else "",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         HorizontalDivider(
                             thickness = 1.dp,
@@ -270,36 +272,31 @@ fun CaptureTransactionAndCrop (
                     .fillMaxHeight()
                     .fillMaxWidth()
             ) {
-
+                Button(
+                    onClick = {
+                        onEvent(AppEvent.OnAddSale)
+                        navController.navigate(Route.Home.path)
+                    },
+                    enabled = (state.amountPaidCash.toDoubleOrNull() ?: 0.0 >= state.itemsInCounterTotalPrice) ||
+                            (state.amountPaidGCash.toDoubleOrNull() ?: 0.0 >= state.itemsInCounterTotalPrice),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Finish")
+                }
                 FilledIconButton(
                     onClick = {
-                        onEvent(AppEvent.OnImageUriChanged(null))
+                        onEvent(AppEvent.OnPaymentMethodBack)
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     ),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
                 }
-
-                Button(onClick = { launchCamera() }) {
-                    Text("Retake")
-                }
-
-                Button(onClick = { launchCropper(state.imageUri) }) {
-                    Text("Crop")
-                }
-
-                if (state.isImageCropped) {
-                    Button(onClick = {
-                        onEvent(AppEvent.OnAddSale(context))
-                        navController.navigate(Route.Home.path)
-                    }) {
-                        Text("Finish")
-                    }
-                }
-
             }
         }
     }
