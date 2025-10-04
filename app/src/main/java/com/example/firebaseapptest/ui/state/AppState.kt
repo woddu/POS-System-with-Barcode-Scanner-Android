@@ -25,7 +25,7 @@ data class AppState(
 
     val isImageCropped: Boolean = false,
 
-    val isPaymentMethodChosen: Boolean= false,
+    val isPaymentMethodChosen: Boolean = false,
 
     val paymentMethod: String = "",
 

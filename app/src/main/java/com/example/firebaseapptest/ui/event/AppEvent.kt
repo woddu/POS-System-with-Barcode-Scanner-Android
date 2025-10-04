@@ -29,4 +29,6 @@ sealed interface AppEvent {
     data class OnGCashReferenceChanged(val reference: String) : AppEvent
 
     data class OnItemCodeTyped(val code: String) : AppEvent
+
+    object OnPaymentMethodBack : AppEvent
 }
