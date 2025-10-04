@@ -2,6 +2,7 @@ package com.example.firebaseapptest.ui.view.screen
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -12,29 +13,42 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.ui.event.AppEvent
+import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.AppState
+import com.example.firebaseapptest.ui.view.SalesFilter
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 
@@ -57,12 +71,17 @@ fun aggregateItemsWithPrice(items: List<ItemForSale>): List<ItemWithQuantityAndT
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(
     state: AppState,
     onEvent: (AppEvent) -> Unit,
     navController: NavHostController,
 ){
+    var showDialog by remember { mutableStateOf(false)}
+
+    var dropDownState by remember { mutableStateOf(false) }
+
     if(state.itemNotFound){
         val context = LocalContext.current
         Toast.makeText(context, "Item not Found!", Toast.LENGTH_SHORT).show()
@@ -171,20 +190,54 @@ fun Home(
                 Button(
                     onClick = {
                         navController.navigate(Route.CaptureTransaction.path)
-//                        onEvent(AppEvent.OnAddSale)
                     }
                 ) {
-//                    Text(text = "Finish")
                     Text(text = "Payment")
                 }
 
-                FilledIconButton(
-                    onClick = {
-                        onEvent(AppEvent.OnScanButtonClickedFromHome)
-                    },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(ImageVector.vectorResource(R.drawable.barcode_scanner_icon), contentDescription = "Add")
+                Box {
+                    FilledIconButton(
+                        onClick = {
+                            dropDownState = true
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+
+                    ) {
+                        Icon(
+                            ImageVector.vectorResource(R.drawable.barcode_scanner_icon),
+                            contentDescription = "Add"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = dropDownState,
+                        onDismissRequest = { dropDownState = false },
+                        offset = DpOffset(x = -(56.dp / 2), y = 0.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(
+                                text = "Scan",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) },
+                            onClick = {
+                                onEvent(AppEvent.OnScanButtonClickedFromHome)
+                                dropDownState = false
+                            },
+
+                            )
+                        DropdownMenuItem(
+                            text = { Text(
+                                text = "Type",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) },
+                            onClick = {
+                                showDialog = true
+                                dropDownState = false
+                            }
+                        )
+                    }
                 }
 
                 Button(
@@ -199,28 +252,99 @@ fun Home(
                     Text(text = "Cancel")
                 }
             }
-        }
-        if (state.itemsInCounter.isEmpty()) {
+        } else {
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                FilledIconButton(
-                    onClick = {
-                        onEvent(AppEvent.OnScanButtonClickedFromHome)
-                    },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        ImageVector.vectorResource(R.drawable.barcode_scanner_icon),
-                        contentDescription = "Add"
-                    )
+
+
+                Box {
+                    FilledIconButton(
+                        onClick = {
+                            dropDownState = true
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+
+                    ) {
+                        Icon(
+                            ImageVector.vectorResource(R.drawable.barcode_scanner_icon),
+                            contentDescription = "Add"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = dropDownState,
+                        onDismissRequest = { dropDownState = false },
+                        offset = DpOffset(x = -(56.dp / 2), y = 0.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(
+                                text = "Scan",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) },
+                            onClick = {
+                                onEvent(AppEvent.OnScanButtonClickedFromHome)
+                                dropDownState = false
+                            },
+
+                        )
+                        DropdownMenuItem(
+                            text = { Text(
+                                text = "Type",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) },
+                            onClick = {
+                                showDialog = true
+                                dropDownState = false
+                            }
+                        )
+                    }
                 }
             }
         }
 
 
+    }
+
+    if(showDialog){
+        BasicAlertDialog(
+            onDismissRequest = {
+                showDialog = false
+            }
+        ){
+            var itemCode by remember { mutableStateOf("") }
+            SimpleCard {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier
+                        .padding(26.dp)
+                ) {
+                    TextField(
+                        value = itemCode,
+                        onValueChange = { newVal ->
+                            val filteredVal = newVal.filter { it.isDigit() }
+                            itemCode = filteredVal
+                        },
+                        label = { Text("Code") },
+                    )
+                    Button(
+                        onClick = {
+                            if (itemCode.isNotEmpty() && itemCode.isNotBlank()){
+                                onEvent(AppEvent.OnItemCodeTyped(itemCode))
+                                showDialog = false
+                            }
+                        },
+                        enabled = itemCode.isNotEmpty() && itemCode.isNotBlank()
+                    ){
+                        Text("Submit")
+                    }
+                }
+            }
+        }
     }
 
     // Side effect for navigation
