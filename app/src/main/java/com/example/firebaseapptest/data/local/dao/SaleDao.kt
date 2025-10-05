@@ -79,6 +79,27 @@ interface SaleDao {
         return SaleWithItemNames(sale, items)
     }
 
+    @Query("""
+        SELECT * FROM sales
+        WHERE date BETWEEN :startOfDay AND :endOfDay
+        ORDER BY date DESC
+    """)
+    fun getAllSalesBetween(
+        startOfDay: Long,
+        endOfDay: Long
+    ): List<Sale>
+    
+    @Transaction
+    suspend fun getSalesWithItemNamesBetween(saleId: Int, startOfDay: Long, endOfDay: Long): List<SaleWithItemNames> {
+        val sales = getAllSalesBetween(startOfDay, endOfDay)
+        var salesWithItemNames = mutableListOf<SaleWithItemNames>()
+        for (sale in sales) {
+            val items = getSaleItemsWithName(sale.id)
+            salesWithItemNames.add(SaleWithItemNames(sale, items))
+        }
+        return salesWithItemNames
+    }
+
 }
 
 
