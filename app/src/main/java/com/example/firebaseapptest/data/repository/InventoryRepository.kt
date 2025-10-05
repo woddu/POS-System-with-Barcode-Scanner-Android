@@ -41,7 +41,7 @@ class InventoryRepository @Inject constructor(
     }
     fun getSalesPaginated(limit: Int, offset: Int) = saleDao.getSalesPaginated(limit,offset)
     fun getSalesBetween(startOfDay: Long, endOfDay: Long, limit: Int, offset: Int) = saleDao.getSalesBetween(startOfDay, endOfDay, limit, offset)
-    fun getAllSalesBetween(startOfDay: Long, endOfDay: Long) = saleDao.getAllSalesBetween(startOfDay, endOfDay)
+    suspend fun getAllSalesBetween(startOfDay: Long, endOfDay: Long) = saleDao.getSalesWithItemNamesBetween(startOfDay, endOfDay)
     fun getTodaySalesPaginated(limit: Int, offset: Int): Flow<List<Sale>> {
         val now = LocalDate.now()
         val startOfDay = now.atStartOfDay(ZoneId.systemDefault())

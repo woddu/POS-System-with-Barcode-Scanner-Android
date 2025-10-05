@@ -90,9 +90,9 @@ interface SaleDao {
     ): List<Sale>
     
     @Transaction
-    suspend fun getSalesWithItemNamesBetween(saleId: Int, startOfDay: Long, endOfDay: Long): List<SaleWithItemNames> {
+    suspend fun getSalesWithItemNamesBetween(startOfDay: Long, endOfDay: Long): List<SaleWithItemNames> {
         val sales = getAllSalesBetween(startOfDay, endOfDay)
-        var salesWithItemNames = mutableListOf<SaleWithItemNames>()
+        val salesWithItemNames = mutableListOf<SaleWithItemNames>()
         for (sale in sales) {
             val items = getSaleItemsWithName(sale.id)
             salesWithItemNames.add(SaleWithItemNames(sale, items))
