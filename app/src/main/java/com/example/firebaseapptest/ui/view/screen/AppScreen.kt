@@ -2,8 +2,10 @@ package com.example.firebaseapptest.ui.view.screen
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Icon
@@ -47,6 +49,7 @@ sealed class Route(val path: String) {
     object CaptureTransaction : Route("captureTransaction")
     object SaleDetails : Route("saleDetails")
     object Scanner : Route("scanner")
+    object Report : Route("report")
 }
 
 @Composable
@@ -68,6 +71,12 @@ fun AppScreen(
             Icons.Filled.ShoppingCart,
             Icons.Outlined.ShoppingCart,
             Route.Sale.path
+        ),
+        BottomNavItems(
+            "Report",
+            Icons.Default.Email,
+            Icons.Outlined.Email,
+            Route.Report.path
         ),
         BottomNavItems(
             "Inventory",
@@ -152,6 +161,10 @@ fun AppScreen(
 
                 composable(Route.CaptureTransaction.path) {
                     CaptureTransactionAndCrop(state, onEvent, navController)
+                }
+
+                composable(Route.Report.path){
+                    Report(state, onEvent)
                 }
             }
         }
