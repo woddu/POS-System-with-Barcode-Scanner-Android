@@ -31,4 +31,6 @@ sealed interface AppEvent {
     data class OnItemCodeTyped(val code: String) : AppEvent
 
     object OnPaymentMethodBack : AppEvent
+
+    data class OnReportFilter(val reportFilter: SalesFilter, val reportBetweenDates: Pair<Long, Long>?): AppEvent
 }
