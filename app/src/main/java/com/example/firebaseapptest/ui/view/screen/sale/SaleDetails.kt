@@ -76,55 +76,56 @@ fun SaleDetails(
             modifier = Modifier.fillMaxWidth()
         ) {
             state.saleWithItemNames?.items?.forEachIndexed { index, item ->
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 18.dp)
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = item.itemName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 170.dp),
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "₱ ${item.price} * ${item.quantity}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 18.dp)
+                    ) {
+                        Text(
+                            text = item.itemName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 170.dp),
+                            maxLines = 1
+                        )
+                        val originalPrice = if (item.isDiscountPercentage) item.price / (1 - item.itemDiscount / 100) else item.price + item.itemDiscount
+                        Text(
+                            text = "₱ $originalPrice * ${item.quantity}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = "Discount",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (item.isDiscountPercentage) "${item.itemDiscount} %" else "₱ ${item.itemDiscount}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 HorizontalDivider(
                     thickness = 1.dp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-            val imageFileExists = remember(state.imageUri) {
-                state.imageUri?.path?.let { File(it).exists() } ?: false
-            }
-            val context = LocalContext.current
-            if (imageFileExists) {
-
-                Text("Transaction: ")
-
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(state.imageUri)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Captured image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-
             }
         }
     }

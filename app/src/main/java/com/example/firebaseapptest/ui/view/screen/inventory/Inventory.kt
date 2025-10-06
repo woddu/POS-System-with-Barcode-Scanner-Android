@@ -275,7 +275,7 @@ fun Inventory(
                             TextField(
                                 value = state.itemDiscount,
                                 onValueChange = { newValue ->
-                                    val filteredValue = newValue.filter { it.isDigit() }
+                                    val filteredValue = newValue.filter { it.isDigit() || it == '.' }
                                     onEvent(InventoryEvent.OnInventorySetItemDiscount(filteredValue))
                                 },
                                 label = { Text("Discount") },

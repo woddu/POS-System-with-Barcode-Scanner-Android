@@ -3,6 +3,7 @@ package com.example.firebaseapptest.ui.view.screen
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -206,8 +207,9 @@ fun CaptureTransactionAndCrop(
                                     modifier = Modifier.widthIn(max = 170.dp),
                                     maxLines = 1
                                 )
+                                val originalPrice = if (item.item.isDiscountPercentage) item.item.price / (1 - item.item.discount / 100) else item.item.price + item.item.discount
                                 Text(
-                                    text = "₱ ${item.item.price} * ${item.quantity}",
+                                    text = "₱ $originalPrice * ${item.quantity}",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 24.sp
@@ -227,7 +229,7 @@ fun CaptureTransactionAndCrop(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = if (item.item.isDiscountPercentage) "" else "₱" + " ${item.item.discount}" + if (item.item.isDiscountPercentage) "%" else "",
+                                    text = if (item.item.isDiscountPercentage) "${item.item.discount} %" else "₱ ${item.item.discount}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
