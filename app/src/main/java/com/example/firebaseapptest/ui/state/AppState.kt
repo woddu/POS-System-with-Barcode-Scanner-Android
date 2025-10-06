@@ -12,6 +12,8 @@ data class AppState(
 
     val sales : List<Sale> = emptyList(),
 
+    val report : List<SaleWithItemNames> = emptyList(),
+
     val itemsInCounter: List<ItemForSale> = emptyList(),
 
     val navigateToScanner: Boolean = false,
@@ -19,7 +21,7 @@ data class AppState(
 
     val itemsInCounterTotalPrice: Double = 0.0,
 
-    val  itemNotFound: Boolean = false,
+    val itemNotFound: Boolean = false,
 
     val imageUri: Uri? = null,
 
@@ -44,5 +46,11 @@ data class AppState(
 
     val tempImageFile: File? = null,
 
-    val saleWithItemNames: SaleWithItemNames? = null
+    val saleWithItemNames: SaleWithItemNames? = null,
+
+    val reportFilter: SalesFilter = SalesFilter.TODAY,
+    val reportStartDate: Long? = null,
+    val reportEndDate: Long? = null,
+
+    
 )
