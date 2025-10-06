@@ -6,5 +6,7 @@ data class SaleItemNameOnly(
     val itemCode: Long,
     val quantity: Int,
     val price: Double,
-    val itemName: String
+    val itemName: String,
+    val itemDiscount: Double,
+    val isDiscountPercentage: Boolean
 )
