@@ -10,6 +10,7 @@ import com.example.firebaseapptest.data.local.entity.helpermodels.SaleItemNameOn
 import com.example.firebaseapptest.data.local.entity.helpermodels.SaleWithItemNames
 import com.example.firebaseapptest.data.local.relations.SaleWithItems
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 @Dao
 interface SaleDao {
@@ -65,7 +66,9 @@ interface SaleDao {
                si.item_code AS itemCode,
                si.quantity,
                si.price,
-               i.name AS itemName
+               i.name AS itemName,
+               si.discount AS itemDiscount,
+               si.isDiscountPercentage AS isDiscountPercentage
         FROM sale_items AS si
         INNER JOIN items AS i ON si.item_code = i.code
         WHERE si.sale_id = :saleId
@@ -87,18 +90,20 @@ interface SaleDao {
     fun getAllSalesBetween(
         startOfDay: Long,
         endOfDay: Long
-    ): List<Sale>
-    
-    @Transaction
-    suspend fun getSalesWithItemNamesBetween(startOfDay: Long, endOfDay: Long): List<SaleWithItemNames> {
-        val sales = getAllSalesBetween(startOfDay, endOfDay)
-        val salesWithItemNames = mutableListOf<SaleWithItemNames>()
-        for (sale in sales) {
-            val items = getSaleItemsWithName(sale.id)
-            salesWithItemNames.add(SaleWithItemNames(sale, items))
+    ): Flow<List<Sale>>
+
+    fun getSalesWithItemNamesBetween(
+        startOfDay: Long,
+        endOfDay: Long
+    ): Flow<List<SaleWithItemNames>> {
+        return getAllSalesBetween(startOfDay, endOfDay).map { sales ->
+            sales.map { sale ->
+                val items = getSaleItemsWithName(sale.id)
+                SaleWithItemNames(sale, items)
+            }
         }
-        return salesWithItemNames
     }
+
 
 }
 
