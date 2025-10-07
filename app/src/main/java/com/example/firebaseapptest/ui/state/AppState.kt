@@ -33,7 +33,6 @@ data class AppState(
 
     val amountPaidCash: String = "0",
     val amountPaidGCash: String = "0",
-    val change: String = "0",
 
     val gCashReference: String = "",
 
