@@ -246,7 +246,7 @@ fun Sale(
                         SalesFilter.BETWEEN,
                         Pair(
                             startDate,
-                            if(startDate == endDate) (endDate + (24 * 60 * 60 * 1000L)) else endDate)
+                            if(startDate == endDate) (endDate + (24 * 60 * 60 * 1000L) - 1L) else endDate)
                         )
                     )
                     showDialog = false
