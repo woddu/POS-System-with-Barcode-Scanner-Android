@@ -1,6 +1,5 @@
 package com.example.firebaseapptest.ui.event
 
-import android.content.Context
 import android.net.Uri
 import com.example.firebaseapptest.ui.view.SalesFilter
 import java.io.File
@@ -32,5 +31,6 @@ sealed interface AppEvent {
 
     object OnPaymentMethodBack : AppEvent
 
-    data class OnReportFilter(val reportFilter: SalesFilter, val reportBetweenDates: Pair<Long, Long>?): AppEvent
+    data class OnFilterReport(val reportFilter: SalesFilter, val reportBetweenDates: Pair<Long, Long>?): AppEvent
 }
+
