@@ -70,6 +70,33 @@ fun SaleDetails(
                 fontWeight = FontWeight.Bold,
                 fontSize = 22.sp
             )
+            if (state.saleWithItemNames?.sale?.paymentMethod == "GCash") {
+                Text(
+                    text = "Amount Paid: ₱ ${state.saleWithItemNames?.sale?.amountPaidGCash}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    text = "Reference: ${state.saleWithItemNames.sale.gCashReference}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+            } else if (state.saleWithItemNames?.sale?.paymentMethod == "Cash") {
+                Text(
+                    text = "Amount Paid: ₱ ${state.saleWithItemNames.sale.amountPaidCash}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    text = "Change: ₱ ${state.saleWithItemNames.sale.change}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+            }
         }
 
         Column(
