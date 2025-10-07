@@ -6,6 +6,7 @@ import com.example.firebaseapptest.data.local.dao.SaleItemDao
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.SaleItem
+import com.example.firebaseapptest.data.local.entity.helpermodels.SaleWithItemNames
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.ZoneId
@@ -42,6 +43,15 @@ class InventoryRepository @Inject constructor(
     fun getSalesPaginated(limit: Int, offset: Int) = saleDao.getSalesPaginated(limit,offset)
     fun getSalesBetween(startOfDay: Long, endOfDay: Long, limit: Int, offset: Int) = saleDao.getSalesBetween(startOfDay, endOfDay, limit, offset)
     fun getAllSalesBetween(startOfDay: Long, endOfDay: Long) = saleDao.getSalesWithItemNamesBetween(startOfDay, endOfDay)
+    fun getTodayAllSales(): Flow<List<SaleWithItemNames>> {
+        val now = LocalDate.now()
+        val startOfDay = now.atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val endOfDay = now.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            .toInstant().toEpochMilli() - 1
+
+        return saleDao.getSalesWithItemNamesBetween(startOfDay, endOfDay)
+    }
     fun getTodaySalesPaginated(limit: Int, offset: Int): Flow<List<Sale>> {
         val now = LocalDate.now()
         val startOfDay = now.atStartOfDay(ZoneId.systemDefault())
