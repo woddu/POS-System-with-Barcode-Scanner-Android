@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -84,11 +85,81 @@ fun CaptureTransactionAndCrop(
     } else {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(16.dp)
         ) {
+            Text(
+                text = state.paymentMethod,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            )
+
+            if (state.paymentMethod == "Cash&GCash") {
+                TextField(
+                    value = state.amountPaidCash,
+                    onValueChange = { newValue ->
+                        val filteredValue = newValue.filter { it.isDigit() }
+                        onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
+                    },
+                    label = { Text("Amount in Cash") },
+                )
+
+                TextField(
+                    value = state.amountPaidGCash,
+                    onValueChange = { newValue ->
+                        val filteredValue = newValue.filter { it.isDigit() }
+                        onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                    },
+                    label = { Text("Amount in GCash") },
+                )
+
+                TextField(
+                    value = state.gCashReference,
+                    onValueChange = {
+                        onEvent(AppEvent.OnGCashReferenceChanged(it))
+                    },
+                    label = { Text("Reference") },
+                )
+            } else {
+                TextField(
+                    value = if (state.paymentMethod == "GCash") state.amountPaidGCash else if (state.paymentMethod == "Cash") state.amountPaidCash else "",
+                    onValueChange = { newValue ->
+                        val filteredValue = newValue.filter { it.isDigit() }
+
+                        if (state.paymentMethod == "GCash") {
+                            onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                        } else if (state.paymentMethod == "Cash") {
+                            onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
+                        }
+                    },
+                    label = { Text("Amount") },
+                )
+
+                if (state.paymentMethod == "GCash") {
+                    TextField(
+                        value = state.gCashReference,
+                        onValueChange = {
+                            onEvent(AppEvent.OnGCashReferenceChanged(it))
+                        },
+                        label = { Text("Reference") },
+                    )
+                }
+
+                if (state.paymentMethod == "Cash" &&  (state.amountPaidCash.toDoubleOrNull() ?: 0.0) > state.itemsInCounterTotalPrice ) {
+                    Text(
+                        text = "Change: ₱ ${(state.amountPaidCash.toDoubleOrNull() ?: 0.0) - state.itemsInCounterTotalPrice}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                }
+            }
+
+
+
             LazyColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -97,76 +168,6 @@ fun CaptureTransactionAndCrop(
                     .fillMaxHeight(.9f)
                     .padding(14.dp)
             ) {
-                item {
-                    Text(
-                        text = state.paymentMethod,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
-                    )
-                }
-
-                if (state.paymentMethod == "Cash&GCash") {
-                    item {
-                        TextField(
-                            value = state.amountPaidCash,
-                            onValueChange = { newValue ->
-                                val filteredValue = newValue.filter { it.isDigit() }
-                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
-                            },
-                            label = { Text("Amount in Cash") },
-                        )
-                    }
-
-                    item {
-                        TextField(
-                            value = state.amountPaidGCash,
-                            onValueChange = { newValue ->
-                                val filteredValue = newValue.filter { it.isDigit() }
-                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
-                            },
-                            label = { Text("Amount in GCash") },
-                        )
-                    }
-
-                    item {
-                        TextField(
-                            value = state.gCashReference,
-                            onValueChange = {
-                                onEvent(AppEvent.OnGCashReferenceChanged(it))
-                            },
-                            label = { Text("Reference") },
-                        )
-                    }
-                } else {
-                    item {
-                        TextField(
-                            value = if (state.paymentMethod == "GCash") state.amountPaidGCash else if (state.paymentMethod == "Cash") state.amountPaidCash else "",
-                            onValueChange = { newValue ->
-                                val filteredValue = newValue.filter { it.isDigit() }
-
-                                if (state.paymentMethod == "GCash") {
-                                    onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
-                                } else if (state.paymentMethod == "Cash") {
-                                    onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
-                                }
-                            },
-                            label = { Text("Amount") },
-                        )
-                    }
-
-                    if (state.paymentMethod == "GCash") {
-                        item {
-                            TextField(
-                                value = state.gCashReference,
-                                onValueChange = {
-                                    onEvent(AppEvent.OnGCashReferenceChanged(it))
-                                },
-                                label = { Text("Reference") },
-                            )
-                        }
-                    }
-                }
 
                 val items = aggregateItemsWithPrice(state.itemsInCounter)
 
@@ -207,14 +208,14 @@ fun CaptureTransactionAndCrop(
                                     modifier = Modifier.widthIn(max = 170.dp),
                                     maxLines = 1
                                 )
-                                val originalPrice = if (item.item.isDiscountPercentage) item.item.price / (1 - item.item.discount / 100) else item.item.price + item.item.discount
+                                val originalPrice =
+                                    if (item.item.isDiscountPercentage) item.item.price / (1 - item.item.discount / 100) else item.item.price + item.item.discount
                                 Text(
                                     text = "₱ $originalPrice * ${item.quantity}",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 24.sp
                                 )
-
                             }
                             Row(
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -279,25 +280,31 @@ fun CaptureTransactionAndCrop(
                         onEvent(AppEvent.OnAddSale)
                         navController.navigate(Route.Home.path)
                     },
-                    enabled = (state.amountPaidCash.toDoubleOrNull() ?: 0.0 >= state.itemsInCounterTotalPrice) ||
-                            (state.amountPaidGCash.toDoubleOrNull() ?: 0.0 >= state.itemsInCounterTotalPrice),
+                    enabled =
+                        if(state.paymentMethod == "Cash&GCash"){
+                            state.gCashReference.trim().isNotEmpty() && (
+                                ((state.amountPaidCash.toDoubleOrNull() ?: 0.0) + (state.amountPaidGCash.toDoubleOrNull() ?: 0.0)) >= state.itemsInCounterTotalPrice
+                            )
+                        } else if(state.paymentMethod == "GCash"){
+                            state.gCashReference.trim().isNotEmpty() && (state.amountPaidGCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
+                        } else {
+                            (state.amountPaidCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
+                        },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Finish")
                 }
-                FilledIconButton(
+                Button(
                     onClick = {
                         onEvent(AppEvent.OnPaymentMethodBack)
                     },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.error
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
                     ),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
+                    Text("Back")
                 }
             }
         }
