@@ -12,9 +12,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -92,6 +95,9 @@ fun AppScreen(
         }
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry.value?.destination?.route
+
+        val snackbarHostState = remember { SnackbarHostState() }
+
         Scaffold(
             bottomBar = {
                 NavigationBar(
@@ -119,6 +125,11 @@ fun AppScreen(
                         )
                     }
                 }
+            },
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState
+                )
             }
         ) { innerPadding ->
             NavHost(
@@ -164,7 +175,7 @@ fun AppScreen(
                 }
 
                 composable(Route.Report.path){
-                    Report(state, onEvent)
+                    Report(state, onEvent, snackbarHostState)
                 }
             }
         }
