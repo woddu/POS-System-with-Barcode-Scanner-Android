@@ -43,6 +43,7 @@ import com.example.firebaseapptest.ui.view.SalesFilter
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -72,10 +73,12 @@ fun Sale(
         Instant.ofEpochMilli(millis)
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
-            .atStartOfDay(ZoneId.systemDefault()) // local midnight
+            .atTime(LocalTime.MAX) // 23:59:59.999999999
+            .atZone(ZoneId.systemDefault())
             .toInstant()
-            .toEpochMilli() // back to Long
+            .toEpochMilli()
     } ?: 0
+
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH)
     Column(
         verticalArrangement = Arrangement.Top,
