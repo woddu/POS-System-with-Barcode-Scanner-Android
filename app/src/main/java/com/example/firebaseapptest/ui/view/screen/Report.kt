@@ -1,10 +1,16 @@
 package com.example.firebaseapptest.ui.view.screen
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,52 +21,75 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.example.firebaseapptest.ui.event.AppEvent
 import com.example.firebaseapptest.ui.state.AppState
 import com.example.firebaseapptest.ui.view.SalesFilter
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
+import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import android.content.Context
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import android.os.Environment
-import android.widget.Toast
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.platform.LocalContext
-import java.io.File
-import java.io.FileOutputStream
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Report(
     state: AppState,
-    onEvent: (AppEvent) -> Unit
+    onEvent: (AppEvent) -> Unit,
+    snackbarHostState: SnackbarHostState
 ) {
-    var totalSales by remember { mutableIntStateOf(0) }
-    var totalCashAmount by remember { mutableDoubleStateOf(0.0) }
-    var totalGCashAmount by remember { mutableDoubleStateOf(0.0) }
-    var totalGCashAndCashAmount by remember { mutableDoubleStateOf(0.0) }
-    var totalSoldItems by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var totalSales = 0
+    var totalCashAmount = 0.0
+    var totalGCashAmount = 0.0
+    var totalGCashAndCashAmount = 0.0
+    var totalSoldItems = 0
+
+    state.report.forEach { saleWithItems ->
+        when (saleWithItems.sale.paymentMethod) {
+            "Cash" -> {
+                totalCashAmount += saleWithItems.sale.total
+            }
+
+            "GCash" -> {
+                totalGCashAmount += saleWithItems.sale.total
+            }
+
+            "GCash&Cash" -> {
+                totalGCashAndCashAmount += saleWithItems.sale.total
+            }
+        }
+        totalSoldItems += saleWithItems.items.size
+        totalSales++
+    }
+
 
     var showDialog by remember { mutableStateOf(false) }
     val dateRangePickerState = rememberDateRangePickerState()
@@ -78,10 +107,12 @@ fun Report(
         Instant.ofEpochMilli(millis)
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
-            .atStartOfDay(ZoneId.systemDefault()) // local midnight
+            .atTime(LocalTime.MAX) // 23:59:59.999999999
+            .atZone(ZoneId.systemDefault())
             .toInstant()
-            .toEpochMilli() // back to Long
+            .toEpochMilli()
     } ?: 0
+
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH)
     Column(
         modifier = Modifier
@@ -162,23 +193,7 @@ fun Report(
                 fontSize = 28.sp
             )
 
-            state.report.forEach { saleWithItems ->
-                when (saleWithItems.sale.paymentMethod) {
-                    "Cash" -> {
-                        totalCashAmount += saleWithItems.sale.total
-                    }
 
-                    "GCash" -> {
-                        totalGCashAmount += saleWithItems.sale.total
-                    }
-
-                    "GCash&Cash" -> {
-                        totalGCashAndCashAmount += saleWithItems.sale.total
-                    }
-                }
-                totalSoldItems += saleWithItems.items.size
-                totalSales++
-            }
             SimpleCard(
                 roundedCornerShape = 12.dp,
                 elevation = 8.dp
@@ -349,8 +364,33 @@ fun Report(
                         totalGCashAndCashAmount,
                         totalSoldItems
                     )
-                    Toast.makeText(context, "PDF saved at: ${file.absolutePath}", Toast.LENGTH_LONG)
-                        .show()
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "PDF saved at: ${file.absolutePath}",
+                            actionLabel = "Open",
+                            duration = SnackbarDuration.Long
+                        )
+                        when (result) {
+                            SnackbarResult.ActionPerformed -> {
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider", // must match your manifest provider authority
+                                    file
+                                )
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/pdf")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            SnackbarResult.Dismissed -> { /* do nothing */ }
+                        }
+
+                    }
                 } else {
                     val now = LocalDate.now()
                     val startOfDay = now.atStartOfDay(ZoneId.systemDefault())
@@ -366,8 +406,33 @@ fun Report(
                         totalGCashAndCashAmount,
                         totalSoldItems
                     )
-                    Toast.makeText(context, "PDF saved at: ${file.absolutePath}", Toast.LENGTH_LONG)
-                        .show()
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "PDF saved at: ${file.absolutePath}",
+                            actionLabel = "Open",
+                            duration = SnackbarDuration.Long
+                        )
+                        when (result) {
+                            SnackbarResult.ActionPerformed -> {
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider", // must match your manifest provider authority
+                                    file
+                                )
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/pdf")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            SnackbarResult.Dismissed -> { /* do nothing */ }
+                        }
+
+                    }
                 }
             },
             modifier = Modifier.padding(top = 12.dp)
@@ -454,10 +519,10 @@ fun generateReportPdf(
     // Save into Documents/MyReports
     val documentsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-    val targetDir = File(documentsDir, "MyReports")
+    val targetDir = File(documentsDir, "Sales Reports")
     if (!targetDir.exists()) targetDir.mkdirs()
 
-    val file = File(targetDir, "sales_report.pdf")
+    val file = File(targetDir, "report_$startDate-$endDate.pdf")
     FileOutputStream(file).use { out ->
         pdfDocument.writeTo(out)
     }
