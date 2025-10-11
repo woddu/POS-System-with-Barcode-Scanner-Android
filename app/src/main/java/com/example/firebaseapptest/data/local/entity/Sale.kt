@@ -16,5 +16,6 @@ data class Sale(
     val amountPaidCash: Double,
     val amountPaidGCash: Double,
     val change : Double,
-    val gCashReference : String = ""
+    val gCashReference : String = "",
+    val lastUpdated: Long
 )

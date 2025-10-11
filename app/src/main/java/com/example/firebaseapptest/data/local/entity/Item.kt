@@ -14,5 +14,6 @@ data class Item(
     val quantity: Int? = 0,
     val sold: Int? = 0,
     val discount: Double = 0.0,
-    val isDiscountPercentage: Boolean = false
+    val isDiscountPercentage: Boolean = false,
+    val lastUpdated: Long
 )
