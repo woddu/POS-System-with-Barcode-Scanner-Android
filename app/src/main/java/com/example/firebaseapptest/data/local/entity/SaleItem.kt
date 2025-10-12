@@ -32,5 +32,6 @@ data class SaleItem(
     val price: Double,
     val discount: Double,
     val isDiscountPercentage: Boolean,
-    val lastUpdated: Long
+    val lastUpdated: Long,
+    val needSync: Boolean = false
 )
