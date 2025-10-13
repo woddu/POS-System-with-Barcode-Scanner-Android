@@ -14,16 +14,20 @@ sealed interface AppEvent {
     data class OnTempImageFileCreated(val photoFile: File) : AppEvent
     data class OnImageUriChanged(val uri: Uri?) : AppEvent
 
-    data class OnChoosePaymentMethod(val method: String): AppEvent
+    data class OnChoosePaymentMethod(val method: String) : AppEvent
 
-    object OnAddSale: AppEvent
+    data class OnItemBargain(val code: Long, val flatDiscount: Double) : AppEvent
 
-    object OnCancelSale: AppEvent
+    object OnAddSale : AppEvent
+
+    object OnCancelSale : AppEvent
 
     data class OnFilterSales(val salesFilter: SalesFilter, val betweenDates: Pair<Long, Long>?): AppEvent
 
     object OnSalesNextPage: AppEvent
+
     object OnSalesPreviousPage: AppEvent
+
     data class OnSaleDetails(val saleId: Int) : AppEvent
 
     data class OnAmountPaidChanged(val amount: String, val isGash: Boolean) : AppEvent
