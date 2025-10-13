@@ -11,13 +11,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,14 +38,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.firebaseapptest.ui.event.AppEvent
 import com.example.firebaseapptest.ui.state.AppState
+import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaptureTransactionAndCrop(
     state: AppState,
     onEvent: (AppEvent) -> Unit,
     navController: NavController
 ) {
+    val bargainChosenItemCode = remember { mutableStateOf<Long?>(null) }
+    val bargainChosenItemPrice = remember { mutableStateOf<Double?>(null) }
+    val showBargainDialog = remember { mutableStateOf(false) }
+
     if (!state.isPaymentMethodChosen) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -173,7 +190,6 @@ fun CaptureTransactionAndCrop(
                         }
                     } else {
                         items(items, key = { item -> item.item.code }) { item ->
-
                             Column(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -214,11 +230,26 @@ fun CaptureTransactionAndCrop(
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Text(
-                                        text = if (item.item.isDiscountPercentage) "${item.item.discount} %" else "₱ ${item.item.discount}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = if (item.item.isDiscountPercentage) "${item.item.discount} %" else "₱ ${item.item.discount}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                        IconButton(
+                                            onClick = {
+                                                bargainChosenItemCode.value = item.item.code
+                                                bargainChosenItemPrice.value = item.item.price
+                                                showBargainDialog.value = true
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Bargain"
+                                            )
+                                        }
+                                    }
                                 }
                             }
                             HorizontalDivider(
@@ -293,6 +324,52 @@ fun CaptureTransactionAndCrop(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Back")
+                }
+            }
+        }
+    }
+
+    if(showBargainDialog.value && bargainChosenItemCode.value != null && bargainChosenItemPrice.value != null){
+        BasicAlertDialog(
+            onDismissRequest = {
+                showBargainDialog.value = false
+                bargainChosenItemCode.value = null
+            }
+        ) {
+            var bargain by remember { mutableStateOf("0") }
+            SimpleCard {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier
+                        .padding(26.dp)
+                ) {
+                    TextField(
+                        value = bargain,
+                        onValueChange = { newVal ->
+                            val filteredVal = newVal.filter { it.isDigit() }
+                            bargain = filteredVal
+                        },
+                        label = { Text("Bargain") },
+                    )
+                    Button(
+                        onClick = {
+                            if (bargain.isNotEmpty() && bargain.isNotBlank()) {
+                                onEvent(
+                                    AppEvent.OnItemBargain(
+                                        bargainChosenItemCode.value!!,
+                                        bargain.toDouble()
+                                    )
+                                )
+                                showBargainDialog.value = false
+                                bargainChosenItemCode.value = null
+                            }
+                        },
+                        enabled = bargain.isNotEmpty() && bargain.isNotBlank() && (
+                                    bargainChosenItemPrice.value!!  > (bargain.toDoubleOrNull() ?: 0.0)
+                                )
+                    ) {
+                        Text("Submit")
+                    }
                 }
             }
         }
