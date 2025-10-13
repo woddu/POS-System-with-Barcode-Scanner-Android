@@ -21,6 +21,9 @@ sealed interface AppEvent {
     object OnCancelSale: AppEvent
 
     data class OnFilterSales(val salesFilter: SalesFilter, val betweenDates: Pair<Long, Long>?): AppEvent
+
+    object OnSalesNextPage: AppEvent
+    object OnSalesPreviousPage: AppEvent
     data class OnSaleDetails(val saleId: Int) : AppEvent
 
     data class OnAmountPaidChanged(val amount: String, val isGash: Boolean) : AppEvent
