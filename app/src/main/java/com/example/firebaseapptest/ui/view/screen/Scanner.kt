@@ -85,11 +85,7 @@ fun Scanner(backStackEntry: NavBackStackEntry, onEvent: (AppEvent) -> Unit, navi
             val scannerView = remember {
                 DecoratedBarcodeView(context).apply {
                     barcodeView.decoderFactory = DefaultDecoderFactory(
-                        listOf(
-                            BarcodeFormat.QR_CODE,
-                            BarcodeFormat.CODE_39,
-                            BarcodeFormat.EAN_13
-                        )
+                        BarcodeFormat.entries.filter { it != BarcodeFormat.QR_CODE }
                     )
                 }
             }
