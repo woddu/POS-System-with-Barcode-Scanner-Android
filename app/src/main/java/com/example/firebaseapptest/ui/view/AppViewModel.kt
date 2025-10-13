@@ -480,6 +480,33 @@ class AppViewModel @Inject constructor(
                     }
                 }
             }
+
+            is AppEvent.OnItemBargain -> {
+                viewModelScope.launch {
+                    val item = repository.getItem(event.code)
+                    if (item == null) return@launch
+
+                    val bargained = state.value.itemsInCounter
+                        .map {
+                            if (it.code == event.code) {
+                                it.copy(
+                                    price = item.price - event.flatDiscount
+                                )
+                            } else {
+                                it
+                            }
+                        }
+                    val totalBargainedPrice = bargained.sumOf { it.price }
+                    bargained.map {
+                        _state.update {
+                            it.copy(
+                                itemsInCounter = bargained,
+                                itemsInCounterTotalPrice = totalBargainedPrice
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
