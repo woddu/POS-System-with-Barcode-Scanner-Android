@@ -46,9 +46,7 @@ import androidx.navigation.NavHostController
 import com.example.firebaseapptest.R
 import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.ui.event.AppEvent
-import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.AppState
-import com.example.firebaseapptest.ui.view.SalesFilter
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 
 

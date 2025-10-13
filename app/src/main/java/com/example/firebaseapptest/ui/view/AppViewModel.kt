@@ -1,6 +1,5 @@
 package com.example.firebaseapptest.ui.view
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseapptest.data.local.entity.Item
@@ -239,16 +238,12 @@ class AppViewModel @Inject constructor(
                 viewModelScope.launch {
 
                     if (state.value.paymentMethod == "Cash" && (state.value.amountPaidCash.toDouble() < state.value.itemsInCounterTotalPrice)) {
-                        Log.d("OnAddSale", "Err 1")
                         return@launch
                     } else if (state.value.paymentMethod == "GCash" && (state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isEmpty()) {
-                        Log.d("OnAddSale", "Err 2")
                         return@launch
                     } else if (state.value.paymentMethod == "Cash&GCash" && (state.value.amountPaidCash.toDouble() + state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isEmpty()) {
-                        Log.d("OnAddSale", "Err 3")
                         return@launch
                     } else if (state.value.paymentMethod == "") {
-                        Log.d("OnAddSale", "Err 4")
                         return@launch
                     }
 
@@ -290,8 +285,8 @@ class AppViewModel @Inject constructor(
                             tempImageFile = null,
                             amountPaidCash = "",
                             amountPaidGCash = "",
-                            gCashReference = ""
-
+                            gCashReference = "",
+                            isPaymentMethodChosen = false
                         )
                     }
 
