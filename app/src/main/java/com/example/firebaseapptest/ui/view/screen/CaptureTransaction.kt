@@ -281,14 +281,18 @@ fun CaptureTransactionAndCrop(
                         navController.navigate(Route.Home.path)
                     },
                     enabled =
-                        if(state.paymentMethod == "Cash&GCash"){
-                            state.gCashReference.trim().isNotEmpty() && (
-                                ((state.amountPaidCash.toDoubleOrNull() ?: 0.0) + (state.amountPaidGCash.toDoubleOrNull() ?: 0.0)) >= state.itemsInCounterTotalPrice
-                            )
-                        } else if(state.paymentMethod == "GCash"){
-                            state.gCashReference.trim().isNotEmpty() && (state.amountPaidGCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
-                        } else {
-                            (state.amountPaidCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
+                        when (state.paymentMethod) {
+                            "Cash&GCash" -> {
+                                state.gCashReference.trim().isNotEmpty() && (
+                                        ((state.amountPaidCash.toDoubleOrNull() ?: 0.0) + (state.amountPaidGCash.toDoubleOrNull() ?: 0.0)) >= state.itemsInCounterTotalPrice
+                                        )
+                            }
+                            "GCash" -> {
+                                state.gCashReference.trim().isNotEmpty() && (state.amountPaidGCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
+                            }
+                            else -> {
+                                (state.amountPaidCash.toDoubleOrNull() ?: 0.0) >= state.itemsInCounterTotalPrice
+                            }
                         },
                     modifier = Modifier.weight(1f)
                 ) {

@@ -329,7 +329,7 @@ fun Report(
                         modifier = Modifier.fillMaxWidth(.5f)
                     )
                     Text(
-                        text = "₱ $totalSoldItems",
+                        text = "$totalSoldItems",
                         style = MaterialTheme.typography.labelLarge,
                         fontSize = 24.sp,
                         textAlign = TextAlign.End,
