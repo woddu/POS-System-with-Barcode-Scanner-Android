@@ -1,5 +1,6 @@
 package com.example.firebaseapptest.ui.view
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseapptest.data.local.entity.Item
@@ -237,56 +238,65 @@ class AppViewModel @Inject constructor(
             is AppEvent.OnAddSale -> {
                 viewModelScope.launch {
 
-                    if (state.value.paymentMethod == "Cash" && (state.value.amountPaidCash.toDouble() >= state.value.itemsInCounterTotalPrice)) return@launch
-                    else if (state.value.paymentMethod == "GCash" && (state.value.amountPaidGCash.toDouble() >= state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isNotEmpty()) return@launch
-                    else if (state.value.paymentMethod == "Cash&GCash" && (state.value.amountPaidCash.toDouble() + state.value.amountPaidGCash.toDouble() >= state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isNotEmpty()) return@launch
-                    else if (state.value.paymentMethod == "") return@launch
+                    if (state.value.paymentMethod == "Cash" && (state.value.amountPaidCash.toDouble() < state.value.itemsInCounterTotalPrice)) {
+                        Log.d("OnAddSale", "Err 1")
+                        return@launch
+                    } else if (state.value.paymentMethod == "GCash" && (state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isEmpty()) {
+                        Log.d("OnAddSale", "Err 2")
+                        return@launch
+                    } else if (state.value.paymentMethod == "Cash&GCash" && (state.value.amountPaidCash.toDouble() + state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim().isEmpty()) {
+                        Log.d("OnAddSale", "Err 3")
+                        return@launch
+                    } else if (state.value.paymentMethod == "") {
+                        Log.d("OnAddSale", "Err 4")
+                        return@launch
+                    }
 
-                        val sale = Sale(
-                            date = LocalDateTime.now(),
-                            total = state.value.itemsInCounterTotalPrice,
-                            paymentMethod = state.value.paymentMethod,
-                            amountPaidCash = state.value.amountPaidCash.toDouble(),
-                            amountPaidGCash = state.value.amountPaidGCash.toDouble(),
-                            gCashReference = state.value.gCashReference,
-                            change = state.value.amountPaidCash.toDouble() - state.value.itemsInCounterTotalPrice,
-                        )
-                        val saleId = repository.addSale(sale)
-                        val saleItems = state.value.itemsInCounter
-                            .groupingBy { it.code }
-                            .eachCount()
-                            .map { (code, quantity) ->
-                                val item = state.value.itemsInCounter.first { it.code == code }
-                                SaleItem(
-                                    saleId = saleId.toInt(),
-                                    itemCode = item.code,
-                                    price = item.price,
-                                    quantity = quantity,
-                                    discount = item.discount,
-                                    isDiscountPercentage = item.isDiscountPercentage
-                                )
-                            }
-                        repository.addSaleItems(saleItems)
-                        saleItems.forEach { saleItem ->
-                            repository.itemSold(saleItem.itemCode, saleItem.quantity)
-                        }
-                        _state.update {
-                            it.copy(
-                                itemsInCounter = emptyList(),
-                                itemsInCounterTotalPrice = 0.0,
-                                imageUri = null,
-                                isImageCropped = false,
-                                paymentMethod = "",
-                                tempImageFile = null,
-                                amountPaidCash = "",
-                                amountPaidGCash = "",
-                                gCashReference = ""
-
+                    val sale = Sale(
+                        date = LocalDateTime.now(),
+                        total = state.value.itemsInCounterTotalPrice,
+                        paymentMethod = state.value.paymentMethod,
+                        amountPaidCash = state.value.amountPaidCash.toDouble(),
+                        amountPaidGCash = state.value.amountPaidGCash.toDouble(),
+                        gCashReference = state.value.gCashReference,
+                        change = state.value.amountPaidCash.toDouble() - state.value.itemsInCounterTotalPrice,
+                    )
+                    val saleId = repository.addSale(sale)
+                    val saleItems = state.value.itemsInCounter
+                        .groupingBy { it.code }
+                        .eachCount()
+                        .map { (code, quantity) ->
+                            val item = state.value.itemsInCounter.first { it.code == code }
+                            SaleItem(
+                                saleId = saleId.toInt(),
+                                itemCode = item.code,
+                                price = item.price,
+                                quantity = quantity,
+                                discount = item.discount,
+                                isDiscountPercentage = item.isDiscountPercentage
                             )
                         }
-
+                    repository.addSaleItems(saleItems)
+                    saleItems.forEach { saleItem ->
+                        repository.itemSold(saleItem.itemCode, saleItem.quantity)
                     }
+                    _state.update {
+                        it.copy(
+                            itemsInCounter = emptyList(),
+                            itemsInCounterTotalPrice = 0.0,
+                            imageUri = null,
+                            isImageCropped = false,
+                            paymentMethod = "",
+                            tempImageFile = null,
+                            amountPaidCash = "",
+                            amountPaidGCash = "",
+                            gCashReference = ""
+
+                        )
+                    }
+
                 }
+            }
 
                 AppEvent.OnCancelSale -> {
                     state.value.tempImageFile?.delete()
