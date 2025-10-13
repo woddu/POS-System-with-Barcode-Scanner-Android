@@ -80,7 +80,7 @@ fun Report(
                 totalGCashAmount += saleWithItems.sale.total
             }
 
-            "GCash&Cash" -> {
+            else -> {
                 totalGCashAndCashAmount += saleWithItems.sale.total
             }
         }
@@ -291,7 +291,7 @@ fun Report(
                         .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
                 ) {
                     Text(
-                        text = "Total GCash&Cash Amount:",
+                        text = "Total Cash&GCash Amount:",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         fontSize = 24.sp,

@@ -226,14 +226,18 @@ fun Sale(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(
-                onClick = {  },
+                onClick = {
+                    onEvent(AppEvent.OnSalesPreviousPage)
+                },
                 enabled = state.currentPage > 1
             ) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Page")
             }
             Text(state.currentPage.toString() + "/" + state.lastPage.toString())
             IconButton(
-                onClick = {  },
+                onClick = {
+                    onEvent(AppEvent.OnSalesNextPage)
+                },
                 enabled = state.currentPage < state.lastPage
             ) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Page")

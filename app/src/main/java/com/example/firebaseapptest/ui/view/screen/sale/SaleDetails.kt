@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -87,15 +89,36 @@ fun SaleDetails(
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
+            } else if (state.saleWithItemNames?.sale?.paymentMethod == "Cash&GCash") {
+                Text(
+                    text = "Cash Amount: ₱ ${state.saleWithItemNames.sale.amountPaidCash}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    text = "GCash Amount: ₱ ${state.saleWithItemNames?.sale?.amountPaidGCash}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    text = "Reference: ${state.saleWithItemNames.sale.gCashReference}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
             }
         }
-
+        val scrollState = rememberScrollState()
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
         ) {
             state.saleWithItemNames?.items?.forEachIndexed { index, item ->
                 Column(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,

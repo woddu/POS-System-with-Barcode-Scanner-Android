@@ -63,61 +63,42 @@ fun CaptureTransactionAndCrop(
         }
     } else {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
-                .fillMaxHeight()
-                .padding(16.dp)
+                .fillMaxSize()
         ) {
-            Text(
-                text = state.paymentMethod,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp
-            )
-
-            if (state.paymentMethod == "Cash&GCash") {
-                TextField(
-                    value = state.amountPaidCash,
-                    onValueChange = { newValue ->
-                        val filteredValue = newValue.filter { it.isDigit() }
-                        onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
-                    },
-                    label = { Text("Amount in Cash") },
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxHeight(.9f)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = state.paymentMethod,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
                 )
 
-                TextField(
-                    value = state.amountPaidGCash,
-                    onValueChange = { newValue ->
-                        val filteredValue = newValue.filter { it.isDigit() }
-                        onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
-                    },
-                    label = { Text("Amount in GCash") },
-                )
-
-                TextField(
-                    value = state.gCashReference,
-                    onValueChange = {
-                        onEvent(AppEvent.OnGCashReferenceChanged(it))
-                    },
-                    label = { Text("Reference") },
-                )
-            } else {
-                TextField(
-                    value = if (state.paymentMethod == "GCash") state.amountPaidGCash else if (state.paymentMethod == "Cash") state.amountPaidCash else "",
-                    onValueChange = { newValue ->
-                        val filteredValue = newValue.filter { it.isDigit() }
-
-                        if (state.paymentMethod == "GCash") {
-                            onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
-                        } else if (state.paymentMethod == "Cash") {
+                if (state.paymentMethod == "Cash&GCash") {
+                    TextField(
+                        value = state.amountPaidCash,
+                        onValueChange = { newValue ->
+                            val filteredValue = newValue.filter { it.isDigit() }
                             onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
-                        }
-                    },
-                    label = { Text("Amount") },
-                )
+                        },
+                        label = { Text("Amount in Cash") },
+                    )
 
-                if (state.paymentMethod == "GCash") {
+                    TextField(
+                        value = state.amountPaidGCash,
+                        onValueChange = { newValue ->
+                            val filteredValue = newValue.filter { it.isDigit() }
+                            onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                        },
+                        label = { Text("Amount in GCash") },
+                    )
+
                     TextField(
                         value = state.gCashReference,
                         onValueChange = {
@@ -125,129 +106,153 @@ fun CaptureTransactionAndCrop(
                         },
                         label = { Text("Reference") },
                     )
-                }
-
-                if (state.paymentMethod == "Cash" &&  (state.amountPaidCash.toDoubleOrNull() ?: 0.0) > state.itemsInCounterTotalPrice ) {
-                    Text(
-                        text = "Change: ₱ ${(state.amountPaidCash.toDoubleOrNull() ?: 0.0) - state.itemsInCounterTotalPrice}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
-                    )
-                }
-            }
-
-
-
-            LazyColumn(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(.9f)
-                    .padding(14.dp)
-            ) {
-
-                val items = aggregateItemsWithPrice(state.itemsInCounter)
-
-                if (state.itemsInCounter.isEmpty()) {
-                    item {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Scan Item(s)",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 30.sp
-                            )
-                        }
-                    }
                 } else {
-                    items(items, key = { item -> item.item.code }) { item ->
+                    TextField(
+                        value = if (state.paymentMethod == "GCash") state.amountPaidGCash else if (state.paymentMethod == "Cash") state.amountPaidCash else "",
+                        onValueChange = { newValue ->
+                            val filteredValue = newValue.filter { it.isDigit() }
 
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Bottom,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 18.dp)
-                            ) {
-                                Text(
-                                    text = item.item.name,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 30.sp,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.widthIn(max = 170.dp),
-                                    maxLines = 1
-                                )
-                                val originalPrice =
-                                    if (item.item.isDiscountPercentage) item.item.price / (1 - item.item.discount / 100) else item.item.price + item.item.discount
-                                Text(
-                                    text = "₱ $originalPrice * ${item.quantity}",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 24.sp
-                                )
+                            if (state.paymentMethod == "GCash") {
+                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, true))
+                            } else if (state.paymentMethod == "Cash") {
+                                onEvent(AppEvent.OnAmountPaidChanged(filteredValue, false))
                             }
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    text = "Discount",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = if (item.item.isDiscountPercentage) "${item.item.discount} %" else "₱ ${item.item.discount}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        label = { Text("Amount") },
+                    )
+
+                    if (state.paymentMethod == "GCash") {
+                        TextField(
+                            value = state.gCashReference,
+                            onValueChange = {
+                                onEvent(AppEvent.OnGCashReferenceChanged(it))
+                            },
+                            label = { Text("Reference") },
+                        )
+                    }
+
+                    if (state.paymentMethod == "Cash" && (state.amountPaidCash.toDoubleOrNull()
+                            ?: 0.0) > state.itemsInCounterTotalPrice
+                    ) {
+                        Text(
+                            text = "Change: ₱ ${(state.amountPaidCash.toDoubleOrNull() ?: 0.0) - state.itemsInCounterTotalPrice}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
                         )
                     }
                 }
 
-                if (!state.itemsInCounter.isEmpty()) {
-                    item {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                        ) {
-                            Text(
-                                text = "Total",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 34.sp
-                            )
-                            Text(
-                                text = "₱ ${state.itemsInCounterTotalPrice}",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 30.sp
+
+
+                LazyColumn(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(.8f)
+                        .padding(14.dp)
+                ) {
+
+                    val items = aggregateItemsWithPrice(state.itemsInCounter)
+
+                    if (state.itemsInCounter.isEmpty()) {
+                        item {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Scan Item(s)",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 30.sp
+                                )
+                            }
+                        }
+                    } else {
+                        items(items, key = { item -> item.item.code }) { item ->
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Bottom,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 18.dp)
+                                ) {
+                                    Text(
+                                        text = item.item.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 30.sp,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.widthIn(max = 170.dp),
+                                        maxLines = 1
+                                    )
+                                    val originalPrice =
+                                        if (item.item.isDiscountPercentage) item.item.price / (1 - item.item.discount / 100) else item.item.price + item.item.discount
+                                    Text(
+                                        text = "₱ $originalPrice * ${item.quantity}",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 24.sp
+                                    )
+                                }
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Discount",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = if (item.item.isDiscountPercentage) "${item.item.discount} %" else "₱ ${item.item.discount}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+
+
+                }
+                if (!state.itemsInCounter.isEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "Total",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 34.sp
+                        )
+                        Text(
+                            text = "₱ ${state.itemsInCounterTotalPrice}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 30.sp
+                        )
+                    }
                 }
             }
-
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
