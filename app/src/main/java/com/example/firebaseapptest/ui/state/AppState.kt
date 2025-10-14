@@ -21,7 +21,9 @@ data class AppState(
 
     val itemsInCounterTotalPrice: Double = 0.0,
 
-    val itemNotFound: Boolean = false,
+    val showSnackbar: Boolean = false,
+
+    val snackBarMessage: String = "",
 
     val imageUri: Uri? = null,
 
