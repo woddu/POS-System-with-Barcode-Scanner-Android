@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.SaleItem
+import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.data.local.entity.helpermodels.SaleWithItemNames
 import com.example.firebaseapptest.data.repository.InventoryRepository
 import com.example.firebaseapptest.ui.event.AppEvent
@@ -174,28 +175,54 @@ class AppViewModel @Inject constructor(
             is AppEvent.OnBarcodeScanned -> {
                 if (_state.value.navigateBackTo == Route.Home.path) {
                     viewModelScope.launch {
-                        var item = repository.getItemByCodeForSale(event.text.toLong())
+                        val itemWithQuantity = repository.getItem(event.text.toLong())
 
-                        if (item != null) {
-                            val discountedPrice = if (item.isDiscountPercentage) {
-                                item.price.minus(if (item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
-                            } else {
-                                item.price.minus(item.discount)
+                        if (itemWithQuantity == null) {
+                            _state.update {
+                                it. copy(
+                                    showSnackbar = true,
+                                    snackBarMessage = "Item Not Found"
+                                )
                             }
-                            item = item.copy(price = discountedPrice)
+                            delay(1000)
+                            _state.update { it.copy(showSnackbar = false) }
+                            return@launch
                         }
+
+                        if (itemWithQuantity.quantity == 0 && (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity)) {
+                            _state.update {
+                                it. copy(
+                                    showSnackbar = true,
+                                    snackBarMessage = "Item Out of Stock"
+                                )
+                            }
+                            delay(1000)
+                            _state.update { it.copy(showSnackbar = false) }
+                            return@launch
+                        }
+
+                        var item = ItemForSale(
+                            code = itemWithQuantity.code,
+                            name = itemWithQuantity.name,
+                            price = itemWithQuantity.price,
+                            discount = itemWithQuantity.discount,
+                            isDiscountPercentage = itemWithQuantity.isDiscountPercentage
+                        )
+
+                        val discountedPrice = if (item.isDiscountPercentage) {
+                            item.price.minus(if (item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
+                        } else {
+                            item.price.minus(item.discount)
+                        }
+                        item = item.copy(price = discountedPrice)
+
 
                         _state.update {
                             it.copy(
-                                itemsInCounter = if (item == null) state.value.itemsInCounter else state.value.itemsInCounter + item,
-                                itemsInCounterTotalPrice = if (item == null) state.value.itemsInCounterTotalPrice else state.value.itemsInCounterTotalPrice + item.price,
-                                itemNotFound = item == null
+                                itemsInCounter = state.value.itemsInCounter + item,
+                                itemsInCounterTotalPrice = state.value.itemsInCounterTotalPrice + item.price,
                             )
                         }
-
-                        delay(1000)
-                        _state.update { it.copy(itemNotFound = false) }
-
                     }
                 } else if (_state.value.navigateBackTo == Route.Inventory.path) {
                     _inventoryState.update { it.copy(itemCode = event.text) }
@@ -205,28 +232,54 @@ class AppViewModel @Inject constructor(
 
             is AppEvent.OnItemCodeTyped -> {
                 viewModelScope.launch {
-                    var item = repository.getItemByCodeForSale(event.code.toLong())
+                    val itemWithQuantity = repository.getItem(event.code.toLong())
 
-                    if (item != null) {
-                        val discountedPrice = if (item.isDiscountPercentage) {
-                            item.price.minus(if (item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
-                        } else {
-                            item.price.minus(item.discount)
+                    if (itemWithQuantity == null) {
+                        _state.update {
+                            it. copy(
+                                showSnackbar = true,
+                                snackBarMessage = "Item Not Found"
+                            )
                         }
-                        item = item.copy(price = discountedPrice)
+                        delay(1000)
+                        _state.update { it.copy(showSnackbar = false) }
+                        return@launch
                     }
+
+                    if (itemWithQuantity.quantity == 0 && (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity)) {
+                        _state.update {
+                            it. copy(
+                                showSnackbar = true,
+                                snackBarMessage = "Item Out of Stock"
+                            )
+                        }
+                        delay(1000)
+                        _state.update { it.copy(showSnackbar = false) }
+                        return@launch
+                    }
+
+                    var item = ItemForSale(
+                        code = itemWithQuantity.code,
+                        name = itemWithQuantity.name,
+                        price = itemWithQuantity.price,
+                        discount = itemWithQuantity.discount,
+                        isDiscountPercentage = itemWithQuantity.isDiscountPercentage
+                    )
+
+                    val discountedPrice = if (item.isDiscountPercentage) {
+                        item.price.minus(if (item.discount > 0.0) (item.price.times(item.discount / 100)) else 0.0)
+                    } else {
+                        item.price.minus(item.discount)
+                    }
+                    item = item.copy(price = discountedPrice)
+
 
                     _state.update {
                         it.copy(
-                            itemsInCounter = if (item == null) state.value.itemsInCounter else state.value.itemsInCounter + item,
-                            itemsInCounterTotalPrice = if (item == null) state.value.itemsInCounterTotalPrice else state.value.itemsInCounterTotalPrice + item.price,
-                            itemNotFound = item == null
+                            itemsInCounter = state.value.itemsInCounter + item,
+                            itemsInCounterTotalPrice = state.value.itemsInCounterTotalPrice + item.price,
                         )
                     }
-
-                    delay(1000)
-                    _state.update { it.copy(itemNotFound = false) }
-
                 }
             }
 
