@@ -1,6 +1,5 @@
 package com.example.firebaseapptest.ui.view.screen
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +22,8 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -30,11 +31,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +49,7 @@ import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.ui.event.AppEvent
 import com.example.firebaseapptest.ui.state.AppState
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
+import kotlinx.coroutines.launch
 
 
 data class ItemWithQuantityAndTotal(
@@ -75,15 +77,25 @@ fun Home(
     state: AppState,
     onEvent: (AppEvent) -> Unit,
     navController: NavHostController,
+    snackbarHostState: SnackbarHostState
 ){
     var showDialog by remember { mutableStateOf(false)}
 
     var dropDownState by remember { mutableStateOf(false) }
 
-    if(state.itemNotFound){
-        val context = LocalContext.current
-        Toast.makeText(context, "Item not Found!", Toast.LENGTH_SHORT).show()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(state.showSnackbar) {
+        if (state.showSnackbar) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Item Not Found",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
     }
+
     Column(
         verticalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
