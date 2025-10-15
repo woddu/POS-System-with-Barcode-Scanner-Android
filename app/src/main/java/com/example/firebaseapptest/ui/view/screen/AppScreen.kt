@@ -138,7 +138,7 @@ fun AppScreen(
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Route.Home.path) {
-                    Home(state, onEvent, navController)
+                    Home(state, onEvent, navController, snackbarHostState)
                 }
 
                 composable(Route.Sale.path) {

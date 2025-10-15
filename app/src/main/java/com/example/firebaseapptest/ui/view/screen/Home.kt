@@ -89,7 +89,7 @@ fun Home(
         if (state.showSnackbar) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = "Item Not Found",
+                    message = state.snackBarMessage,
                     duration = SnackbarDuration.Short
                 )
             }
