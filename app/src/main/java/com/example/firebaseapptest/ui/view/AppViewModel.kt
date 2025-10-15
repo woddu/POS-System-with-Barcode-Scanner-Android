@@ -80,6 +80,7 @@ class AppViewModel @Inject constructor(
     private val _reportFilter = MutableStateFlow(SalesFilter.TODAY)
     private val _reportBetweenDates = MutableStateFlow<Pair<Long, Long>?>(null)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val _report: StateFlow<List<SaleWithItemNames>> =
         combine(_reportFilter, _reportBetweenDates) { filter, between ->
             filter to between
@@ -180,8 +181,8 @@ class AppViewModel @Inject constructor(
                         if (itemWithQuantity == null) {
                             _state.update {
                                 it. copy(
-                                    showSnackbar = true,
-                                    snackBarMessage = "Item Not Found"
+                                    snackBarMessage = "Item Not Found",
+                                    showSnackbar = true
                                 )
                             }
                             delay(1000)
@@ -189,11 +190,11 @@ class AppViewModel @Inject constructor(
                             return@launch
                         }
 
-                        if (itemWithQuantity.quantity == 0 && (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity)) {
+                        if (itemWithQuantity.quantity!! < 1 || (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity!!)) {
                             _state.update {
                                 it. copy(
-                                    showSnackbar = true,
-                                    snackBarMessage = "Item Out of Stock"
+                                    snackBarMessage = "Item Out of Stock",
+                                    showSnackbar = true
                                 )
                             }
                             delay(1000)
@@ -237,8 +238,8 @@ class AppViewModel @Inject constructor(
                     if (itemWithQuantity == null) {
                         _state.update {
                             it. copy(
-                                showSnackbar = true,
-                                snackBarMessage = "Item Not Found"
+                                snackBarMessage = "Item Not Found",
+                                showSnackbar = true
                             )
                         }
                         delay(1000)
@@ -246,11 +247,11 @@ class AppViewModel @Inject constructor(
                         return@launch
                     }
 
-                    if (itemWithQuantity.quantity == 0 && (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity)) {
+                    if (itemWithQuantity.quantity!! < 1 || (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity!!)) {
                         _state.update {
                             it. copy(
-                                showSnackbar = true,
-                                snackBarMessage = "Item Out of Stock"
+                                snackBarMessage = "Item Out of Stock",
+                                showSnackbar = true
                             )
                         }
                         delay(1000)
