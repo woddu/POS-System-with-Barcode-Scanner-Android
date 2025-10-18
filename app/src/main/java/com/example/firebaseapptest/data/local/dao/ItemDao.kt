@@ -18,7 +18,7 @@ interface ItemDao {
     suspend fun addSold(code: Long, amount: Int)
 
     @Delete
-    suspend fun deleteItem(item: Item)
+    suspend fun deleteItem(item: Item): Int
 
     @Query("SELECT COUNT(*) FROM items")
     suspend fun getCount(): Int
