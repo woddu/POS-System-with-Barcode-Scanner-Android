@@ -15,6 +15,7 @@ data class Item(
     val sold: Int? = 0,
     val discount: Double = 0.0,
     val isDiscountPercentage: Boolean = false,
-    val lastUpdated: Long,
-    val needSync: Boolean = false
+    val lastUpdated: Long = System.currentTimeMillis(),
+    val needSync: Boolean = false,
+    val needToDelete: Boolean = false
 )

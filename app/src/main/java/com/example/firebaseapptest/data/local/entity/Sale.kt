@@ -17,6 +17,6 @@ data class Sale(
     val amountPaidGCash: Double,
     val change : Double,
     val gCashReference : String = "",
-    val lastUpdated: Long,
+    val lastUpdated: Long = System.currentTimeMillis(),
     val needSync: Boolean = false
 )
