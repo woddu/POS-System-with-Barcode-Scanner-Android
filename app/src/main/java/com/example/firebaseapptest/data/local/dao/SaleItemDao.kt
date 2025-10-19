@@ -1,19 +1,19 @@
 package com.example.firebaseapptest.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Upsert
 import com.example.firebaseapptest.data.local.entity.SaleItem
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SaleItemDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSaleItems(saleItems: List<SaleItem>): List<Long>
+    @Upsert
+    suspend fun upsertSaleItems(saleItems: List<SaleItem>): List<Long>
+
+    @Query("SELECT * FROM sale_items WHERE needSync = 1")
+    suspend fun getSaleItemsToSync(): List<SaleItem>
+
     /*
     // 🆕 Create
     @Insert(onConflict = OnConflictStrategy.REPLACE)
