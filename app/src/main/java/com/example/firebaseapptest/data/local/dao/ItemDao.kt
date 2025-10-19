@@ -37,4 +37,11 @@ interface ItemDao {
 
     @Query("SELECT code, name, price, discount, isDiscountPercentage FROM items WHERE code = :code")
     suspend fun getItemByCodeForSale(code: Long): ItemForSale?
+
+    @Query("SELECT * FROM items WHERE needSync = 1")
+    suspend fun getItemsToSync(): List<Item>
+
+    @Query("SELECT * FROM items WHERE needToDelete = 1")
+    suspend fun getItemsToDelete(): List<Item>
+
 }
