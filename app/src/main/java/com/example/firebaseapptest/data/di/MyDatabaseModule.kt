@@ -9,6 +9,8 @@ import com.example.firebaseapptest.data.local.dao.ItemDao
 import com.example.firebaseapptest.data.local.dao.SaleDao
 import com.example.firebaseapptest.data.local.dao.SaleItemDao
 import com.example.firebaseapptest.data.local.dao.UserDao
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -50,4 +52,13 @@ object MyDatabaseModule {
 
     @Provides
     fun provideUserDao(db: InventoryDatabase): UserDao = db.userDao()
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth() = FirebaseAuth.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore() = FirebaseFirestore.getInstance()
+
 }
