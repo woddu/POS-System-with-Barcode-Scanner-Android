@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    id("com.google.gms.google-services")
 }
 
 ksp {
@@ -97,5 +98,9 @@ dependencies {
     implementation("com.github.yalantis:ucrop:2.2.8")
 
     implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+//    implementation("com.google.firebase:firebase-database-ktx")
 
 }
