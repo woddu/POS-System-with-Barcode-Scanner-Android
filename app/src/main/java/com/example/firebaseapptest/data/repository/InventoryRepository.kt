@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.ZoneId
@@ -39,15 +40,19 @@ class InventoryRepository @Inject constructor(
 
     suspend fun upsertItem(item: Item): Long {
         return try {
-            firebaseFirestore.collection("items")
-                .document(item.code.toString())
-                .set(item)
-                .await() // suspends until complete
+            withTimeout(3000) {
+                firebaseFirestore.collection("items")
+                    .document(item.code.toString())
+                    .set(item)
+                    .await() // will throw if it fails or times out
+            }
             itemDao.upsertItem(item.copy(needSync = false))
         } catch (e: Exception) {
+            // includes TimeoutCancellationException
             itemDao.upsertItem(item.copy(needSync = true))
         }
     }
+
 
 //    suspend fun upsertItem(item: Item) = itemDao.upsertItem(item)
 
@@ -55,10 +60,12 @@ class InventoryRepository @Inject constructor(
     suspend fun deleteItem(item: Item?): Int {
         if (item != null) {
             try {
-                firebaseFirestore.collection("items")
-                    .document(item.code.toString())
-                    .delete()
-                    .await()
+                withTimeout(3000) {
+                    firebaseFirestore.collection("items")
+                        .document(item.code.toString())
+                        .delete()
+                        .await()
+                }
                 return itemDao.deleteItem(item)
             } catch (e: Exception) {
                 itemDao.upsertItem(item.copy(needSync = true, needToDelete = true))
@@ -112,10 +119,12 @@ class InventoryRepository @Inject constructor(
     //    suspend fun addSale(sale: Sale) = saleDao.addSale(sale)
     suspend fun addSale(sale: Sale): Long {
         return try {
-            firebaseFirestore.collection("sales")
-                .document(sale.id.toString())
-                .set(sale)
-                .await()
+            withTimeout(3000) {
+                firebaseFirestore.collection("sales")
+                    .document(sale.id.toString())
+                    .set(sale)
+                    .await()
+            }
             saleDao.addSale(sale.copy(needSync = false))
         } catch (e: Exception) {
             saleDao.addSale(sale.copy(needSync = true))
@@ -127,16 +136,17 @@ class InventoryRepository @Inject constructor(
     //    suspend fun addSaleItems(saleItems: List<SaleItem>) = saleItemDao.insertSaleItems(saleItems)
     suspend fun addSaleItems(saleItems: List<SaleItem>): List<Long> {
         return try {
-            val batch = firebaseFirestore.batch()
+            withTimeout(5000) {
+                val batch = firebaseFirestore.batch()
 
-            saleItems.forEach { saleItem ->
-                val itemRef = firebaseFirestore.collection("items")
-                    .document(saleItem.id.toString())
-                batch.set(itemRef, saleItem) // write each item
+                saleItems.forEach { saleItem ->
+                    val itemRef = firebaseFirestore.collection("items")
+                        .document(saleItem.id.toString())
+                    batch.set(itemRef, saleItem) // write each item
+                }
+
+                batch.commit().await() // wait for all writes to finish
             }
-
-            batch.commit().await() // wait for all writes to finish
-
             // Save locally as synced
             saleItemDao.upsertSaleItems(saleItems.map { it.copy(needSync = false) })
         } catch (e: Exception) {
@@ -198,6 +208,7 @@ class InventoryRepository @Inject constructor(
 
     suspend fun OutgoingSyncItems(): Boolean {
         try {
+
             val batch = firebaseFirestore.batch()
 
             itemDao.getItemsToSync().forEach { item ->
@@ -213,7 +224,7 @@ class InventoryRepository @Inject constructor(
                     val itemRef = firebaseFirestore.collection("items")
                         .document(item.code.toString())
 
-                    batch.set(itemRef, item)
+                    batch.set(itemRef, item.copy(needSync = false))
 
                     itemDao.upsertItem(item.copy(needSync = false))
                 }
@@ -223,7 +234,7 @@ class InventoryRepository @Inject constructor(
                 val saleRef = firebaseFirestore.collection("sales")
                     .document(sale.id.toString())
 
-                batch.set(saleRef, sale)
+                batch.set(saleRef, sale.copy(needSync = false))
 
                 saleDao.addSale(sale.copy(needSync = false))
             }
@@ -232,7 +243,7 @@ class InventoryRepository @Inject constructor(
                 val saleItemRef = firebaseFirestore.collection("saleItems")
                     .document(saleItem.id.toString())
 
-                batch.set(saleItemRef, saleItem)
+                batch.set(saleItemRef, saleItem.copy(needSync = false))
 
                 saleItemDao.upsertSaleItems(listOf(saleItem.copy(needSync = false)))
             }
