@@ -14,6 +14,9 @@ interface SaleItemDao {
     @Query("SELECT * FROM sale_items WHERE needSync = 1")
     suspend fun getSaleItemsToSync(): List<SaleItem>
 
+    @Query("SELECT COUNT(*) FROM items WHERE needSync = 1")
+    suspend fun getCountOfSaleItemsToSync(): Int
+
     /*
     // 🆕 Create
     @Insert(onConflict = OnConflictStrategy.REPLACE)

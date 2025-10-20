@@ -107,6 +107,9 @@ interface SaleDao {
     @Query("SELECT * FROM sales WHERE needSync = 1")
     suspend fun getSalesToSync(): List<Sale>
 
+    @Query("SELECT COUNT(*) FROM items WHERE needSync = 1")
+    suspend fun getCountOfSalesToSync(): Int
+
 }
 
 

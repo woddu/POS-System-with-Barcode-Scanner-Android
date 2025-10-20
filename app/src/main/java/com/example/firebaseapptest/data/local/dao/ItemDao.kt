@@ -41,7 +41,13 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE needSync = 1")
     suspend fun getItemsToSync(): List<Item>
 
+    @Query("SELECT COUNT(*) FROM items WHERE needSync = 1")
+    suspend fun getCountOfItemsToSync(): Int
+
     @Query("SELECT * FROM items WHERE needToDelete = 1")
     suspend fun getItemsToDelete(): List<Item>
+
+    @Query("SELECT COUNT(*) FROM items WHERE needToDelete = 1 AND needSync = 1")
+    suspend fun getCountOfItemsToDelete(): Int
 
 }
