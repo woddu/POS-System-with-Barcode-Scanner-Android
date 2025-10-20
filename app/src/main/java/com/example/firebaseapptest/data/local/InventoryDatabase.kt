@@ -9,9 +9,10 @@ import com.example.firebaseapptest.data.local.dao.UserDao
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.SaleItem
+import com.example.firebaseapptest.data.local.entity.User
 
 @Database(
-    entities = [Item::class, Sale::class, SaleItem::class],
+    entities = [Item::class, Sale::class, SaleItem::class, User::class],
     version = 7
 )
 abstract class InventoryDatabase : RoomDatabase() {
