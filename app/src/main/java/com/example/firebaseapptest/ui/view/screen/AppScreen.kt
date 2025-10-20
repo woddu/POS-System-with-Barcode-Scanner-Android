@@ -1,5 +1,9 @@
 package com.example.firebaseapptest.ui.view.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -8,6 +12,9 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -19,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.navigation.compose.NavHost
@@ -55,6 +64,7 @@ sealed class Route(val path: String) {
     object Report : Route("report")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreen(
     state: AppState,
@@ -97,88 +107,122 @@ fun AppScreen(
         val currentRoute = navBackStackEntry.value?.destination?.route
 
         val snackbarHostState = remember { SnackbarHostState() }
+        Box {
+            Scaffold(
+                bottomBar = {
+                    NavigationBar(
 
-        Scaffold(
-            bottomBar = {
-                NavigationBar(
+                    ) {
+                        navItems.forEachIndexed { index, item ->
+                            NavigationBarItem(
 
-                ) {
-                    navItems.forEachIndexed { index, item ->
-                        NavigationBarItem(
-
-                            selected = selectedItemIndex.intValue == index,
-                            icon = {
-                                Icon(
-                                    imageVector = if (selectedItemIndex.intValue == index) {
-                                        item.selectedIcon
-                                    } else item.unselectedIcon,
-                                    contentDescription = item.name
-                                )
-                            },
-                            label = {
-                                Text(item.name)
-                            },
-                            onClick = {
-                                selectedItemIndex.intValue = index
-                                navController.navigate(item.route)
-                            }
-                        )
+                                selected = selectedItemIndex.intValue == index,
+                                icon = {
+                                    Icon(
+                                        imageVector = if (selectedItemIndex.intValue == index) {
+                                            item.selectedIcon
+                                        } else item.unselectedIcon,
+                                        contentDescription = item.name
+                                    )
+                                },
+                                label = {
+                                    Text(item.name)
+                                },
+                                onClick = {
+                                    selectedItemIndex.intValue = index
+                                    navController.navigate(item.route)
+                                }
+                            )
+                        }
                     }
-                }
-            },
-            snackbarHost = {
-                SnackbarHost(
-                    hostState = snackbarHostState
-                )
-            }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Route.Home.path,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Route.Home.path) {
-                    Home(state, onEvent, navController, snackbarHostState)
-                }
-
-                composable(Route.Sale.path) {
-                    Sale(state, onEvent, navController)
-                }
-
-                composable(Route.SaleDetails.path) {
-                    SaleDetails(state)
-                }
-
-                composable(Route.Inventory.path) {
-                    Inventory(
-                        state.navigateToScanner,
-                        inventoryState,
-                        navController,
-                        onInventoryEvent,
+                },
+                snackbarHost = {
+                    SnackbarHost(
+                        hostState = snackbarHostState
                     )
                 }
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = Route.Home.path,
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    composable(Route.Home.path) {
+                        Home(state, onEvent, navController, snackbarHostState)
+                    }
 
-                composable(Route.InventoryDetails.path) {
-                    ItemDetails(inventoryState, onInventoryEvent) {
-                        navController.navigate(Route.Inventory.path)
+                    composable(Route.Sale.path) {
+                        Sale(state, onEvent, navController)
+                    }
+
+                    composable(Route.SaleDetails.path) {
+                        SaleDetails(state)
+                    }
+
+                    composable(Route.Inventory.path) {
+                        Inventory(
+                            state.navigateToScanner,
+                            inventoryState,
+                            navController,
+                            onInventoryEvent,
+                        )
+                    }
+
+                    composable(Route.InventoryDetails.path) {
+                        ItemDetails(inventoryState, onInventoryEvent) {
+                            navController.navigate(Route.Inventory.path)
+                        }
+                    }
+
+                    composable(Route.Scanner.path) { backStackEntry ->
+                        Scanner(backStackEntry, onEvent) {
+                            navController.navigate(state.navigateBackTo)
+                        }
+                    }
+
+                    composable(Route.CaptureTransaction.path) {
+                        CaptureTransactionAndCrop(state, onEvent, navController)
+                    }
+
+                    composable(Route.Report.path) {
+                        Report(state, onEvent, snackbarHostState)
                     }
                 }
+            }
 
-                composable(Route.Scanner.path) { backStackEntry ->
-                    Scanner(backStackEntry, onEvent){
-                        navController.navigate(state.navigateBackTo)
+            if (state.isLoading) {
+                BasicAlertDialog(onDismissRequest = { /* block dismiss */ }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            // intercept all clicks
+                            .clickable(enabled = true, onClick = { })
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                }
-
-                composable(Route.CaptureTransaction.path) {
-                    CaptureTransactionAndCrop(state, onEvent, navController)
-                }
-
-                composable(Route.Report.path){
-                    Report(state, onEvent, snackbarHostState)
                 }
             }
         }
     }
 }
 
+//fun NavGraphBuilder.authComposable(
+//    route: String,
+//    isLoggedIn: Boolean,
+//    navController: NavController,
+//    content: @Composable (NavBackStackEntry) -> Unit
+//) {
+//    composable(route) { backStackEntry ->
+//        if (!isLoggedIn) {
+//            LaunchedEffect(Unit) {
+//                navController.navigate(Route.Login.path) {
+//                    popUpTo(0) { inclusive = true }
+//                }
+//            }
+//        } else {
+//            content(backStackEntry)
+//        }
+//    }
+//}
