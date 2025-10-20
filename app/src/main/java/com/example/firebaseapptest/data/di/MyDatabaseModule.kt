@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.work.WorkManager
 import com.example.firebaseapptest.data.local.InventoryDatabase
 import com.example.firebaseapptest.data.local.dao.ItemDao
 import com.example.firebaseapptest.data.local.dao.SaleDao
@@ -60,5 +61,13 @@ object MyDatabaseModule {
     @Provides
     @Singleton
     fun provideFirebaseFirestore() = FirebaseFirestore.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(
+        @ApplicationContext context: Context
+    ): WorkManager {
+        return WorkManager.getInstance(context)
+    }
 
 }
