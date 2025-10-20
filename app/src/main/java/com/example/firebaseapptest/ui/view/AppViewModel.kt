@@ -2,17 +2,23 @@ package com.example.firebaseapptest.ui.view
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.firebaseapptest.data.local.entity.Item
 import com.example.firebaseapptest.data.local.entity.Sale
 import com.example.firebaseapptest.data.local.entity.SaleItem
 import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.data.local.entity.helpermodels.SaleWithItemNames
 import com.example.firebaseapptest.data.repository.InventoryRepository
+import com.example.firebaseapptest.data.repository.LoginResult
 import com.example.firebaseapptest.ui.event.AppEvent
 import com.example.firebaseapptest.ui.event.InventoryEvent
 import com.example.firebaseapptest.ui.state.AppState
 import com.example.firebaseapptest.ui.state.InventoryState
 import com.example.firebaseapptest.ui.view.screen.Route
+import com.example.firebaseapptest.worker.OutgoingSyncWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -32,7 +38,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
-    private val repository: InventoryRepository
+    private val repository: InventoryRepository,
+    private val workManager: WorkManager
 ) : ViewModel() {
     private val inventoryPageSize = 10
     private val _searchQuery = MutableStateFlow("")
@@ -129,13 +136,13 @@ class AppViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-
             val itemsTotalCount = repository.getItemsCount()
             setItemsLastPage(itemsTotalCount)
             val saleTotalCount = repository.getSaleCount()
             setSaleLastPage(saleTotalCount)
 
         }
+        syncNow()
     }
 
     private fun setItemsLastPage(itemsTotalCount: Int) {
@@ -160,6 +167,18 @@ class AppViewModel @Inject constructor(
         }
     }
 
+    fun syncNow() {
+        val request = OneTimeWorkRequestBuilder<OutgoingSyncWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+
+        workManager.enqueue(request)
+    }
+
     fun onEvent(
         event: AppEvent
     ) {
@@ -180,7 +199,7 @@ class AppViewModel @Inject constructor(
 
                         if (itemWithQuantity == null) {
                             _state.update {
-                                it. copy(
+                                it.copy(
                                     snackBarMessage = "Item Not Found",
                                     showSnackbar = true
                                 )
@@ -192,7 +211,7 @@ class AppViewModel @Inject constructor(
 
                         if (itemWithQuantity.quantity!! < 1 || (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity!!)) {
                             _state.update {
-                                it. copy(
+                                it.copy(
                                     snackBarMessage = "Item Out of Stock",
                                     showSnackbar = true
                                 )
@@ -237,7 +256,7 @@ class AppViewModel @Inject constructor(
 
                     if (itemWithQuantity == null) {
                         _state.update {
-                            it. copy(
+                            it.copy(
                                 snackBarMessage = "Item Not Found",
                                 showSnackbar = true
                             )
@@ -249,7 +268,7 @@ class AppViewModel @Inject constructor(
 
                     if (itemWithQuantity.quantity!! < 1 || (state.value.itemsInCounter.count { it.code == itemWithQuantity.code } > itemWithQuantity.quantity!!)) {
                         _state.update {
-                            it. copy(
+                            it.copy(
                                 snackBarMessage = "Item Out of Stock",
                                 showSnackbar = true
                             )
@@ -290,51 +309,55 @@ class AppViewModel @Inject constructor(
 
             is AppEvent.OnAddSale -> {
                 viewModelScope.launch {
-
-                    if (state.value.paymentMethod == "Cash" && (state.value.amountPaidCash.toDouble() < state.value.itemsInCounterTotalPrice)) {
-                        return@launch
-                    } else if (state.value.paymentMethod == "GCash" && (state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim()
-                            .isEmpty()
-                    ) {
-                        return@launch
-                    } else if (state.value.paymentMethod == "Cash&GCash" && (state.value.amountPaidCash.toDouble() + state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim()
-                            .isEmpty()
-                    ) {
-                        return@launch
-                    } else if (state.value.paymentMethod == "") {
-                        return@launch
-                    }
-
-                    val sale = Sale(
-                        date = LocalDateTime.now(),
-                        total = state.value.itemsInCounterTotalPrice,
-                        paymentMethod = state.value.paymentMethod,
-                        amountPaidCash = state.value.amountPaidCash.toDouble(),
-                        amountPaidGCash = state.value.amountPaidGCash.toDoubleOrNull() ?: 0.0,
-                        gCashReference = state.value.gCashReference,
-                        change = state.value.amountPaidCash.toDouble() - state.value.itemsInCounterTotalPrice,
-                    )
-                    val saleId = repository.addSale(sale)
-                    val saleItems = state.value.itemsInCounter
-                        .groupingBy { it.code }
-                        .eachCount()
-                        .map { (code, quantity) ->
-                            val item = state.value.itemsInCounter.first { it.code == code }
-                            SaleItem(
-                                saleId = saleId.toInt(),
-                                itemCode = item.code,
-                                price = item.price,
-                                quantity = quantity,
-                                discount = item.discount,
-                                isDiscountPercentage = item.isDiscountPercentage
-                            )
+                    _state.update { it.copy(isLoading = true) }
+                    try {
+                        if (state.value.paymentMethod == "Cash" && (state.value.amountPaidCash.toDouble() < state.value.itemsInCounterTotalPrice)) {
+                            return@launch
+                        } else if (state.value.paymentMethod == "GCash" && (state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim()
+                                .isEmpty()
+                        ) {
+                            return@launch
+                        } else if (state.value.paymentMethod == "Cash&GCash" && (state.value.amountPaidCash.toDouble() + state.value.amountPaidGCash.toDouble() < state.value.itemsInCounterTotalPrice) && state.value.gCashReference.trim()
+                                .isEmpty()
+                        ) {
+                            return@launch
+                        } else if (state.value.paymentMethod == "") {
+                            return@launch
                         }
-                    repository.addSaleItems(saleItems)
-                    saleItems.forEach { saleItem ->
-                        repository.itemSold(saleItem.itemCode, saleItem.quantity)
-                    }
-                    _state.update {
-                        it.copy(
+
+                        val sale = Sale(
+                            date = LocalDateTime.now(),
+                            total = state.value.itemsInCounterTotalPrice,
+                            paymentMethod = state.value.paymentMethod,
+                            amountPaidCash = state.value.amountPaidCash.toDouble(),
+                            amountPaidGCash = state.value.amountPaidGCash.toDoubleOrNull() ?: 0.0,
+                            gCashReference = state.value.gCashReference,
+                            change = state.value.amountPaidCash.toDouble() - state.value.itemsInCounterTotalPrice,
+                        )
+                        val saleId = repository.addSale(sale)
+                        val saleItems = state.value.itemsInCounter
+                            .groupingBy { it.code }
+                            .eachCount()
+                            .map { (code, quantity) ->
+                                val item = state.value.itemsInCounter.first { it.code == code }
+                                SaleItem(
+                                    saleId = saleId.toInt(),
+                                    itemCode = item.code,
+                                    price = item.price,
+                                    quantity = quantity,
+                                    discount = item.discount,
+                                    isDiscountPercentage = item.isDiscountPercentage
+                                )
+                            }
+                        repository.addSaleItems(saleItems)
+                        saleItems.forEach { saleItem ->
+                            repository.itemSold(saleItem.itemCode, saleItem.quantity)
+                        }
+
+                        val saleTotalCount = repository.getSaleCount()
+                        setSaleLastPage(saleTotalCount)
+                    } finally {
+                        _state.update { it.copy(
                             itemsInCounter = emptyList(),
                             itemsInCounterTotalPrice = 0.0,
                             imageUri = null,
@@ -344,11 +367,10 @@ class AppViewModel @Inject constructor(
                             amountPaidCash = "0",
                             amountPaidGCash = "0",
                             gCashReference = "",
-                            isPaymentMethodChosen = false
-                        )
+                            isPaymentMethodChosen = false,
+                            isLoading = false
+                        ) }
                     }
-                    val saleTotalCount = repository.getSaleCount()
-                    setSaleLastPage(saleTotalCount)
                 }
             }
 
@@ -561,6 +583,38 @@ class AppViewModel @Inject constructor(
                     }
                 }
             }
+
+//            is AppEvent.OnLogin -> {
+//                viewModelScope.launch {
+//                    val result = repository.login(event.email, event.password)
+//                    when (result){
+//                        LoginResult.NetworkError -> {
+//
+//                        }
+//                        is LoginResult.Success -> {
+//                            _state.update { it.copy(isLoggedIn = true) }
+//                        }
+//                        is LoginResult.UnknownError -> {
+//                            _state.update { it.copy(
+//                                showLoginErrorDialog = true,
+//                                loginErrorMessage = result.exception.message ?: "Unknown Error"
+//                            ) }
+//                        }
+//                        LoginResult.UserNotFound -> {
+//                            _state.update { it.copy(
+//                                showLoginErrorDialog = true,
+//                                loginErrorMessage = "User not found"
+//                            ) }
+//                        }
+//                        LoginResult.WrongPassword -> {
+//                            _state.update { it.copy(
+//                                showLoginErrorDialog = true,
+//                                loginErrorMessage = "Wrong Password"
+//                            ) }
+//                        }
+//                    }
+//                }
+//            }
         }
     }
 
@@ -616,36 +670,42 @@ class AppViewModel @Inject constructor(
 
             InventoryEvent.OnInventoryAddConfirmed -> {
                 viewModelScope.launch {
-                    val item = Item(
-                        code = inventoryState.value.itemCode.toLong(),
-                        name = inventoryState.value.itemName,
-                        price = inventoryState.value.itemPrice.toDouble(),
-                        description = inventoryState.value.itemDescription,
-                        color = inventoryState.value.itemColor,
-                        size = inventoryState.value.itemSize,
-                        sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
-                        quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
-                        discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
-                        isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
-                    )
-                    repository.upsertItem(item)
-                    _inventoryState.update {
-                        it.copy(
-                            itemName = "",
-                            itemPrice = "",
-                            itemQuantity = "",
-                            itemDescription = "",
-                            itemColor = "",
-                            itemCode = "",
-                            itemSize = "",
-                            itemSold = "",
-                            itemDiscount = "",
-                            itemIsDiscountPercentage = false,
-                            showFormDialog = false
+                    _state.update { it.copy(isLoading = true) }
+                    try {
+                        val item = Item(
+                            code = inventoryState.value.itemCode.toLong(),
+                            name = inventoryState.value.itemName,
+                            price = inventoryState.value.itemPrice.toDouble(),
+                            description = inventoryState.value.itemDescription,
+                            color = inventoryState.value.itemColor,
+                            size = inventoryState.value.itemSize,
+                            sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
+                            quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
+                            discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
+                            isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
                         )
+                        repository.upsertItem(item)
+
+                        val totalCount = repository.getItemsCount()
+                        setItemsLastPage(totalCount)
+                    } finally {
+                        _inventoryState.update {
+                            it.copy(
+                                itemName = "",
+                                itemPrice = "",
+                                itemQuantity = "",
+                                itemDescription = "",
+                                itemColor = "",
+                                itemCode = "",
+                                itemSize = "",
+                                itemSold = "",
+                                itemDiscount = "",
+                                itemIsDiscountPercentage = false,
+                                showFormDialog = false
+                            )
+                        }
+                        _state.update { it.copy(isLoading = false) }
                     }
-                    val totalCount = repository.getItemsCount()
-                    setItemsLastPage(totalCount)
                 }
             }
 
@@ -707,26 +767,30 @@ class AppViewModel @Inject constructor(
 
             is InventoryEvent.OnInventoryDeleteConfirmed -> {
                 viewModelScope.launch {
-                    val item = repository.getItem(event.code)
-                    repository.deleteItem(item)
-                    _inventoryState.update {
-                        it.copy(
-                            deleteConfirmationDialog = false,
-                            itemName = "",
-                            itemPrice = "",
-                            itemQuantity = "",
-                            itemDescription = "",
-                            itemColor = "",
-                            itemCode = "",
-                            itemSize = "",
-                            itemSold = "",
-                            itemDiscount = "",
-                            itemIsDiscountPercentage = false
-                        )
+                    _state.update { it.copy(isLoading = true) }
+                    try {
+                        val item = repository.getItem(event.code)
+                        repository.deleteItem(item)
+                        _inventoryState.update {
+                            it.copy(
+                                deleteConfirmationDialog = false,
+                                itemName = "",
+                                itemPrice = "",
+                                itemQuantity = "",
+                                itemDescription = "",
+                                itemColor = "",
+                                itemCode = "",
+                                itemSize = "",
+                                itemSold = "",
+                                itemDiscount = "",
+                                itemIsDiscountPercentage = false
+                            )
+                        }
+                        val totalCount = repository.getItemsCount()
+                        setItemsLastPage(totalCount)
+                    } finally {
+                        _state.update { it.copy(isLoading = false) }
                     }
-                    val totalCount = repository.getItemsCount()
-                    setItemsLastPage(totalCount)
-
                 }
             }
 
@@ -738,19 +802,24 @@ class AppViewModel @Inject constructor(
 
             InventoryEvent.OnInventoryEditConfirmed -> {
                 viewModelScope.launch {
-                    val item = Item(
-                        code = inventoryState.value.itemCode.toLong(),
-                        name = inventoryState.value.itemName,
-                        price = inventoryState.value.itemPrice.toDouble(),
-                        description = inventoryState.value.itemDescription,
-                        color = inventoryState.value.itemColor,
-                        size = inventoryState.value.itemSize,
-                        sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
-                        quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
-                        discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
-                        isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
-                    )
-                    repository.upsertItem(item)
+                    _state.update { it.copy(isLoading = true) }
+                    try {
+                        val item = Item(
+                            code = inventoryState.value.itemCode.toLong(),
+                            name = inventoryState.value.itemName,
+                            price = inventoryState.value.itemPrice.toDouble(),
+                            description = inventoryState.value.itemDescription,
+                            color = inventoryState.value.itemColor,
+                            size = inventoryState.value.itemSize,
+                            sold = inventoryState.value.itemSold.toIntOrNull() ?: 0,
+                            quantity = inventoryState.value.itemQuantity.toIntOrNull() ?: 0,
+                            discount = inventoryState.value.itemDiscount.toDoubleOrNull() ?: 0.0,
+                            isDiscountPercentage = inventoryState.value.itemIsDiscountPercentage
+                        )
+                        repository.upsertItem(item)
+                    } finally {
+                        _state.update { it.copy(isLoading = false) }
+                    }
                 }
             }
 
