@@ -12,6 +12,8 @@ import com.example.firebaseapptest.data.local.dao.SaleItemDao
 import com.example.firebaseapptest.data.local.dao.UserDao
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestoreSettings
+import com.google.firebase.firestore.memoryCacheSettings
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,7 +62,16 @@ object MyDatabaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseFirestore() = FirebaseFirestore.getInstance()
+    fun provideFirebaseFirestore() : FirebaseFirestore   {
+        val settings = firestoreSettings {
+            // Use an in-memory cache instead of the default persistent cache
+            setLocalCacheSettings(memoryCacheSettings { })
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        db.firestoreSettings = settings
+        return db
+    }
 
     @Provides
     @Singleton
