@@ -53,5 +53,7 @@ data class AppState(
     val reportStartDate: Long? = null,
     val reportEndDate: Long? = null,
 
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+
+    val isLoggedIn: Boolean = false
 )
