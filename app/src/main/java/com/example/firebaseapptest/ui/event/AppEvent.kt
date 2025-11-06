@@ -39,5 +39,7 @@ sealed interface AppEvent {
     object OnPaymentMethodBack : AppEvent
 
     data class OnFilterReport(val reportFilter: SalesFilter, val reportBetweenDates: Pair<Long, Long>?): AppEvent
+
+    data class OnLogin(val email: String, val password: String) : AppEvent
 }
 
