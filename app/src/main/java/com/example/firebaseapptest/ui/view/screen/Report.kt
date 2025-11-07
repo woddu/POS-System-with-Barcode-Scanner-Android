@@ -81,7 +81,8 @@ fun Report(
             }
 
             else -> {
-                totalGCashAndCashAmount += saleWithItems.sale.total
+                totalCashAmount += saleWithItems.sale.amountPaidCash
+                totalGCashAmount += saleWithItems.sale.amountPaidGCash
             }
         }
         totalSoldItems += saleWithItems.items.size
@@ -279,35 +280,7 @@ fun Report(
                     )
                 }
             }
-            SimpleCard(
-                roundedCornerShape = 12.dp,
-                elevation = 8.dp
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
-                ) {
-                    Text(
-                        text = "Total Cash&GCash Amount:",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        modifier = Modifier.fillMaxWidth(.5f)
-                    )
-                    Text(
-                        text = "₱ $totalGCashAndCashAmount",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontSize = 24.sp,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 8.dp)
-                    )
-                }
-            }
+            
             SimpleCard(
                 roundedCornerShape = 12.dp,
                 elevation = 8.dp
