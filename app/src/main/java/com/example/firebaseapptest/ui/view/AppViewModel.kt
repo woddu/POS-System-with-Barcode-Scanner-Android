@@ -584,37 +584,37 @@ class AppViewModel @Inject constructor(
                 }
             }
 
-//            is AppEvent.OnLogin -> {
-//                viewModelScope.launch {
-//                    val result = repository.login(event.email, event.password)
-//                    when (result){
-//                        LoginResult.NetworkError -> {
-//
-//                        }
-//                        is LoginResult.Success -> {
-//                            _state.update { it.copy(isLoggedIn = true) }
-//                        }
-//                        is LoginResult.UnknownError -> {
-//                            _state.update { it.copy(
-//                                showLoginErrorDialog = true,
-//                                loginErrorMessage = result.exception.message ?: "Unknown Error"
-//                            ) }
-//                        }
-//                        LoginResult.UserNotFound -> {
-//                            _state.update { it.copy(
-//                                showLoginErrorDialog = true,
-//                                loginErrorMessage = "User not found"
-//                            ) }
-//                        }
-//                        LoginResult.WrongPassword -> {
-//                            _state.update { it.copy(
-//                                showLoginErrorDialog = true,
-//                                loginErrorMessage = "Wrong Password"
-//                            ) }
-//                        }
-//                    }
-//                }
-//            }
+            is AppEvent.OnLogin -> {
+                viewModelScope.launch {
+                    val result = repository.login(event.email, event.password)
+                    when (result){
+                        LoginResult.NetworkError -> {
+
+                        }
+                        is LoginResult.Success -> {
+                            _state.update { it.copy(isLoggedIn = true) }
+                        }
+                        is LoginResult.UnknownError -> {
+                            _state.update { it.copy(
+                                showLoginErrorDialog = true,
+                                loginErrorMessage = result.exception.message ?: "Unknown Error"
+                            ) }
+                        }
+                        LoginResult.UserNotFound -> {
+                            _state.update { it.copy(
+                                showLoginErrorDialog = true,
+                                loginErrorMessage = "User not found"
+                            ) }
+                        }
+                        LoginResult.WrongPassword -> {
+                            _state.update { it.copy(
+                                showLoginErrorDialog = true,
+                                loginErrorMessage = "Wrong Password"
+                            ) }
+                        }
+                    }
+                }
+            }
         }
     }
 
