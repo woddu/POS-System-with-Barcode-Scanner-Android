@@ -23,6 +23,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -62,6 +66,7 @@ sealed class Route(val path: String) {
     object SaleDetails : Route("saleDetails")
     object Scanner : Route("scanner")
     object Report : Route("report")
+    object Login : Route("login")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,29 +115,31 @@ fun AppScreen(
         Box {
             Scaffold(
                 bottomBar = {
-                    NavigationBar(
+                    if (state.isLoggedIn) {
+                        NavigationBar(
 
-                    ) {
-                        navItems.forEachIndexed { index, item ->
-                            NavigationBarItem(
+                        ) {
+                            navItems.forEachIndexed { index, item ->
+                                NavigationBarItem(
 
-                                selected = selectedItemIndex.intValue == index,
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selectedItemIndex.intValue == index) {
-                                            item.selectedIcon
-                                        } else item.unselectedIcon,
-                                        contentDescription = item.name
-                                    )
-                                },
-                                label = {
-                                    Text(item.name)
-                                },
-                                onClick = {
-                                    selectedItemIndex.intValue = index
-                                    navController.navigate(item.route)
-                                }
-                            )
+                                    selected = selectedItemIndex.intValue == index,
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selectedItemIndex.intValue == index) {
+                                                item.selectedIcon
+                                            } else item.unselectedIcon,
+                                            contentDescription = item.name
+                                        )
+                                    },
+                                    label = {
+                                        Text(item.name)
+                                    },
+                                    onClick = {
+                                        selectedItemIndex.intValue = index
+                                        navController.navigate(item.route)
+                                    }
+                                )
+                            }
                         }
                     }
                 },
@@ -184,8 +191,16 @@ fun AppScreen(
                         CaptureTransactionAndCrop(state, onEvent, navController)
                     }
 
-                    composable(Route.Report.path) {
+                    authComposable(
+                        Route.Report.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         Report(state, onEvent, snackbarHostState)
+                    }
+
+                    composable(Route.Login.path) {
+                        Login(state, onEvent)
                     }
                 }
             }
@@ -208,21 +223,21 @@ fun AppScreen(
     }
 }
 
-//fun NavGraphBuilder.authComposable(
-//    route: String,
-//    isLoggedIn: Boolean,
-//    navController: NavController,
-//    content: @Composable (NavBackStackEntry) -> Unit
-//) {
-//    composable(route) { backStackEntry ->
-//        if (!isLoggedIn) {
-//            LaunchedEffect(Unit) {
-//                navController.navigate(Route.Login.path) {
-//                    popUpTo(0) { inclusive = true }
-//                }
-//            }
-//        } else {
-//            content(backStackEntry)
-//        }
-//    }
-//}
+fun NavGraphBuilder.authComposable(
+    route: String,
+    isLoggedIn: Boolean,
+    navController: NavController,
+    content: @Composable (NavBackStackEntry) -> Unit
+) {
+    composable(route) { backStackEntry ->
+        if (!isLoggedIn) {
+            LaunchedEffect(Unit) {
+                navController.navigate(Route.Login.path) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        } else {
+            content(backStackEntry)
+        }
+    }
+}
