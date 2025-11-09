@@ -37,7 +37,17 @@ object MyDatabaseModule {
                         .digest("@PoSE12025".toByteArray())
                     val hashedPassword = bytes.joinToString("") { "%02x".format(it) }
                     // Insert seed data directly with SQL
-                    db.execSQL("INSERT OR IGNORE INTO User (id, email, username, password, isOwner) VALUES (0, 'employee1@pos.com', 'employee1', '$hashedPassword', 0)")
+                    db.execSQL("INSERT OR IGNORE INTO users (id, email, username, password, isOwner) VALUES (0, 'employee1@pos.com', 'employee1', '$hashedPassword', 0)")
+                }
+            })
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) {
+                    super.onOpen(db)
+                    val bytes = MessageDigest.getInstance("SHA-256")
+                        .digest("@PoSE12025".toByteArray())
+                    val hashedPassword = bytes.joinToString("") { "%02x".format(it) }
+
+                    db.execSQL("INSERT OR IGNORE INTO users (id, email, username, password, isOwner) VALUES (0, 'employee1@pos.com', 'employee1', '$hashedPassword', 0)")
                 }
             })
             .fallbackToDestructiveMigration(false)
