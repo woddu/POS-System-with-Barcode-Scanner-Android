@@ -17,12 +17,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            FirebaseApptestTheme {
                 val viewModel = hiltViewModel<AppViewModel>()
                 val state = viewModel.state.collectAsState().value
                 val inventoryState = viewModel.inventoryState.collectAsState().value
                 AppScreen(state, inventoryState, viewModel::onEvent, viewModel::onInventoryEvent)
-            }
         }
     }
 }

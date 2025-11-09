@@ -586,33 +586,39 @@ class AppViewModel @Inject constructor(
 
             is AppEvent.OnLogin -> {
                 viewModelScope.launch {
+                    _state.update { it.copy(showLoginSnackbar = false, isLoading = true) }
                     val result = repository.login(event.email, event.password)
                     when (result){
                         LoginResult.NetworkError -> {
 
                         }
                         is LoginResult.Success -> {
-                            _state.update { it.copy(isLoggedIn = true) }
+                            _state.update { it.copy(
+                                isLoggedIn = true,
+                                showLoginSnackbar = true,
+                                loginSnackbarMessage = "Login Successful"
+                            ) }
                         }
                         is LoginResult.UnknownError -> {
                             _state.update { it.copy(
-                                showLoginErrorDialog = true,
-                                loginErrorMessage = result.exception.message ?: "Unknown Error"
+                                showLoginSnackbar = true,
+                                loginSnackbarMessage = result.exception.message ?: "Unknown Error"
                             ) }
                         }
                         LoginResult.UserNotFound -> {
                             _state.update { it.copy(
-                                showLoginErrorDialog = true,
-                                loginErrorMessage = "User not found"
+                                showLoginSnackbar = true,
+                                loginSnackbarMessage = "User not found"
                             ) }
                         }
                         LoginResult.WrongPassword -> {
                             _state.update { it.copy(
-                                showLoginErrorDialog = true,
-                                loginErrorMessage = "Wrong Password"
+                                showLoginSnackbar = true,
+                                loginSnackbarMessage = "Wrong Password"
                             ) }
                         }
                     }
+                    _state.update { it.copy(isLoading = false) }
                 }
             }
         }
