@@ -151,22 +151,38 @@ fun AppScreen(
             ) { innerPadding ->
                 NavHost(
                     navController = navController,
-                    startDestination = Route.Home.path,
+                    startDestination = Route.Login.path,
                     modifier = Modifier.padding(innerPadding)
                 ) {
-                    composable(Route.Home.path) {
+                    authComposable(
+                        Route.Home.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         Home(state, onEvent, navController, snackbarHostState)
                     }
 
-                    composable(Route.Sale.path) {
+                    authComposable(
+                        Route.Sale.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         Sale(state, onEvent, navController)
                     }
 
-                    composable(Route.SaleDetails.path) {
+                    authComposable(
+                        Route.SaleDetails.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         SaleDetails(state)
                     }
 
-                    composable(Route.Inventory.path) {
+                    authComposable(
+                        Route.Inventory.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         Inventory(
                             state.navigateToScanner,
                             inventoryState,
@@ -175,19 +191,31 @@ fun AppScreen(
                         )
                     }
 
-                    composable(Route.InventoryDetails.path) {
+                    authComposable(
+                        Route.InventoryDetails.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         ItemDetails(inventoryState, onInventoryEvent) {
                             navController.navigate(Route.Inventory.path)
                         }
                     }
 
-                    composable(Route.Scanner.path) { backStackEntry ->
+                    authComposable(
+                        Route.Scanner.path,
+                        state.isLoggedIn,
+                        navController
+                    ) { backStackEntry ->
                         Scanner(backStackEntry, onEvent) {
                             navController.navigate(state.navigateBackTo)
                         }
                     }
 
-                    composable(Route.CaptureTransaction.path) {
+                    authComposable(
+                        Route.CaptureTransaction.path,
+                        state.isLoggedIn,
+                        navController
+                    ) {
                         CaptureTransactionAndCrop(state, onEvent, navController)
                     }
 
@@ -200,7 +228,15 @@ fun AppScreen(
                     }
 
                     composable(Route.Login.path) {
-                        Login(state, onEvent)
+                        if (!state.isLoggedIn){
+                            Login(state, onEvent, snackbarHostState)
+                        } else {
+                            LaunchedEffect(Unit) {
+                                navController.navigate(Route.Home.path) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -217,6 +253,13 @@ fun AppScreen(
                     ) {
                         CircularProgressIndicator()
                     }
+                }
+            }
+        }
+        LaunchedEffect(state.isLoggedIn) {
+            if (state.isLoggedIn){
+                navController.navigate(Route.Home.path) {
+                    popUpTo(0) { inclusive = true }
                 }
             }
         }
