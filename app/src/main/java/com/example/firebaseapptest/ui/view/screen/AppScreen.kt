@@ -154,7 +154,7 @@ fun AppScreen(
                 snackbarHost = {
                     SnackbarHost(
                         hostState = snackbarHostState,
-                        modifier = Modifier.padding(bottom = 36.dp)
+                        modifier = Modifier.padding(bottom = 42.dp)
                     )
                 }
             ) { innerPadding ->

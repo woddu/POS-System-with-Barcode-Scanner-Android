@@ -55,7 +55,5 @@ data class AppState(
 
     val isLoading: Boolean = false,
 
-    val isLoggedIn: Boolean = false,
-    val showLoginSnackbar: Boolean = false,
-    val loginSnackbarMessage: String = ""
+    val isLoggedIn: Boolean = false
 )
