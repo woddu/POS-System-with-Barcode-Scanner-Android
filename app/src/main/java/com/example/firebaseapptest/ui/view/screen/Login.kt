@@ -1,12 +1,16 @@
 package com.example.firebaseapptest.ui.view.screen
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,12 +40,28 @@ fun Login(
     state: AppState,
     onEvent: (AppEvent) -> Unit
 ) {
+    val context = LocalContext.current
+    val sharedPref = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+    val editor = sharedPref.edit()
+
+    val rememberMe = sharedPref.getBoolean("remember_me", false)
+    val email = sharedPref.getString("email", "") ?: ""
+    val password = sharedPref.getString("password", "") ?: ""
 
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize()
     ) {
+        val rememberMeState = remember { mutableStateOf(rememberMe) }
+        val emailState = remember { mutableStateOf(
+            if (rememberMe) email else ""
+        ) }
+        val passwordState = remember { mutableStateOf(
+            if (rememberMe) password else ""
+        ) }
+        val passwordVisible = remember { mutableStateOf(false) }
         SimpleCard {
             Column(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -56,18 +77,16 @@ fun Login(
                     modifier = Modifier.padding(bottom = 14.dp)
                 )
 
-                val email = remember { mutableStateOf("") }
                 TextField(
-                    value = email.value,
-                    onValueChange = { email.value = it },
+                    value = emailState.value,
+                    onValueChange = { emailState.value = it },
                     label = { Text("Email") },
                     singleLine = true,
                 )
-                val password = remember { mutableStateOf("") }
-                val passwordVisible = remember { mutableStateOf(false) }
+
                 TextField(
-                    value = password.value,
-                    onValueChange = { password.value = it },
+                    value = passwordState.value,
+                    onValueChange = { passwordState.value = it },
                     label = { Text("Password") },
                     singleLine = true,
                     visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
@@ -86,14 +105,36 @@ fun Login(
                     },
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            onEvent(AppEvent.OnLogin(email.value, password.value))
+                            if (rememberMeState.value) {
+                                editor.putString("email", emailState.value).apply()
+                                editor.putString("password", passwordState.value).apply()
+                            }
+                            onEvent(AppEvent.OnLogin(emailState.value, passwordState.value))
                         }
                     )
                 )
 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = rememberMeState.value,
+                        onCheckedChange = {
+                            rememberMeState.value = it
+                            editor.putBoolean("remember_me", it).apply()
+                        }
+                    )
+                    Text(
+                        text = "Remember me",
+                    )
+                }
                 Button(
                     onClick = {
-                        onEvent(AppEvent.OnLogin(email.value, password.value))
+                        if (rememberMeState.value) {
+                            editor.putString("email", emailState.value).apply()
+                            editor.putString("password", passwordState.value).apply()
+                        }
+                        onEvent(AppEvent.OnLogin(emailState.value, passwordState.value))
                     },
                 ) {
                     Text(
