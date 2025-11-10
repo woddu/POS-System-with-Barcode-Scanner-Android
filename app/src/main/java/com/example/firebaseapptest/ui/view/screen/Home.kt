@@ -22,8 +22,6 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -31,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +46,6 @@ import com.example.firebaseapptest.data.local.entity.helpermodels.ItemForSale
 import com.example.firebaseapptest.ui.event.AppEvent
 import com.example.firebaseapptest.ui.state.AppState
 import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
-import kotlinx.coroutines.launch
 
 
 data class ItemWithQuantityAndTotal(
@@ -76,25 +72,11 @@ fun aggregateItemsWithPrice(items: List<ItemForSale>): List<ItemWithQuantityAndT
 fun Home(
     state: AppState,
     onEvent: (AppEvent) -> Unit,
-    navController: NavHostController,
-    snackbarHostState: SnackbarHostState
+    navController: NavHostController
 ){
     var showDialog by remember { mutableStateOf(false)}
 
     var dropDownState by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(state.showSnackbar) {
-        if (state.showSnackbar) {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = state.snackBarMessage,
-                    duration = SnackbarDuration.Short
-                )
-            }
-        }
-    }
 
     Column(
         verticalArrangement = Arrangement.SpaceBetween,

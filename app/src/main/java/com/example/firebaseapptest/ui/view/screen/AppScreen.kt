@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -26,12 +27,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -49,6 +52,7 @@ import com.example.firebaseapptest.ui.view.screen.inventory.ItemDetails
 import com.example.firebaseapptest.ui.view.screen.inventory.Inventory
 import com.example.firebaseapptest.ui.view.screen.sale.Sale
 import com.example.firebaseapptest.ui.view.screen.sale.SaleDetails
+import kotlinx.coroutines.launch
 
 data class BottomNavItems(
     val name: String,
@@ -103,7 +107,11 @@ fun AppScreen(
             Route.Inventory.path
         ),
     )
+
     val navController = rememberNavController()
+
+    val scope = rememberCoroutineScope()
+
     FirebaseApptestTheme {
         val selectedItemIndex = rememberSaveable {
             mutableIntStateOf(0)
@@ -145,7 +153,8 @@ fun AppScreen(
                 },
                 snackbarHost = {
                     SnackbarHost(
-                        hostState = snackbarHostState
+                        hostState = snackbarHostState,
+                        modifier = Modifier.padding(bottom = 36.dp)
                     )
                 }
             ) { innerPadding ->
@@ -159,7 +168,7 @@ fun AppScreen(
                         state.isLoggedIn,
                         navController
                     ) {
-                        Home(state, onEvent, navController, snackbarHostState)
+                        Home(state, onEvent, navController)
                     }
 
                     authComposable(
@@ -229,7 +238,7 @@ fun AppScreen(
 
                     composable(Route.Login.path) {
                         if (!state.isLoggedIn){
-                            Login(state, onEvent, snackbarHostState)
+                            Login(state, onEvent)
                         } else {
                             LaunchedEffect(Unit) {
                                 navController.navigate(Route.Home.path) {
@@ -260,6 +269,16 @@ fun AppScreen(
             if (state.isLoggedIn){
                 navController.navigate(Route.Home.path) {
                     popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+        LaunchedEffect(state.showSnackbar) {
+            if (state.showSnackbar) {
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = state.snackBarMessage,
+                        duration = SnackbarDuration.Short
+                    )
                 }
             }
         }
