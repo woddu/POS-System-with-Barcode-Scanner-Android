@@ -176,8 +176,13 @@ class InventoryRepository @Inject constructor(
                 .await()
 
             if (!snapshot.isEmpty) {
-                val user = snapshot.documents[0].toObject(User::class.java)
-                if (user != null) {
+                val snap = snapshot.documents[0]
+//                    .toObject(User::class.java)
+                val user = User(
+                    email = snap.getString("email") ?: "",
+                    username = snap.getString("username") ?: "",
+                )
+                if (snap != null) {
                     LoginResult.Success(user)
                 } else {
                     LoginResult.UnknownError(Exception("User document parse failed"))
@@ -190,6 +195,7 @@ class InventoryRepository @Inject constructor(
                 is FirebaseAuthInvalidUserException -> LoginResult.UserNotFound
                 is FirebaseAuthInvalidCredentialsException -> LoginResult.WrongPassword
                 else -> {
+
                     // Fallback to Room DB
                     val user = userDao.getUserByEmail(email)
                     val hashedPassword = hashPassword(password)
@@ -208,7 +214,6 @@ class InventoryRepository @Inject constructor(
 
     suspend fun OutgoingSyncItems(): Boolean {
         try {
-
             val batch = firebaseFirestore.batch()
 
             itemDao.getItemsToSync().forEach { item ->
