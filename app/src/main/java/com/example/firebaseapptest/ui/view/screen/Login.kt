@@ -4,16 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,8 +33,7 @@ import com.example.firebaseapptest.ui.view.screen.components.SimpleCard
 @Composable
 fun Login(
     state: AppState,
-    onEvent: (AppEvent) -> Unit,
-    snackbarHostState: SnackbarHostState
+    onEvent: (AppEvent) -> Unit
 ) {
 
     Column(
@@ -77,7 +75,7 @@ fun Login(
                     trailingIcon = {
                         val image = if (passwordVisible.value)
                             ImageVector.vectorResource(R.drawable.visibility_24dp)
-                        else ImageVector.vectorResource(R.drawable.visibility_lock_24dp)
+                        else ImageVector.vectorResource(R.drawable.visibility_off_24dp)
 
                         IconButton(onClick = { passwordVisible.value = !passwordVisible.value }) {
                             Icon(
@@ -85,7 +83,12 @@ fun Login(
                                 contentDescription = if (passwordVisible.value) "Hide password" else "Show password"
                             )
                         }
-                    }
+                    },
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            onEvent(AppEvent.OnLogin(email.value, password.value))
+                        }
+                    )
                 )
 
                 Button(
@@ -101,14 +104,6 @@ fun Login(
                     )
                 }
             }
-        }
-    }
-
-    LaunchedEffect(state.showLoginSnackbar) {
-        if (state.showLoginSnackbar) {
-            snackbarHostState.showSnackbar(
-                message = state.loginSnackbarMessage
-            )
         }
     }
 }

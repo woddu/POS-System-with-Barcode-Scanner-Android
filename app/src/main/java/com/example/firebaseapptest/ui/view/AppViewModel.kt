@@ -195,6 +195,7 @@ class AppViewModel @Inject constructor(
             is AppEvent.OnBarcodeScanned -> {
                 if (_state.value.navigateBackTo == Route.Home.path) {
                     viewModelScope.launch {
+                        _state.update { it.copy(showSnackbar = false) }
                         val itemWithQuantity = repository.getItem(event.text.toLong())
 
                         if (itemWithQuantity == null) {
@@ -204,8 +205,6 @@ class AppViewModel @Inject constructor(
                                     showSnackbar = true
                                 )
                             }
-                            delay(1000)
-                            _state.update { it.copy(showSnackbar = false) }
                             return@launch
                         }
 
@@ -216,8 +215,6 @@ class AppViewModel @Inject constructor(
                                     showSnackbar = true
                                 )
                             }
-                            delay(1000)
-                            _state.update { it.copy(showSnackbar = false) }
                             return@launch
                         }
 
@@ -252,6 +249,7 @@ class AppViewModel @Inject constructor(
 
             is AppEvent.OnItemCodeTyped -> {
                 viewModelScope.launch {
+                    _state.update { it.copy(showSnackbar = false) }
                     val itemWithQuantity = repository.getItem(event.code.toLong())
 
                     if (itemWithQuantity == null) {
@@ -261,8 +259,6 @@ class AppViewModel @Inject constructor(
                                 showSnackbar = true
                             )
                         }
-                        delay(1000)
-                        _state.update { it.copy(showSnackbar = false) }
                         return@launch
                     }
 
@@ -273,8 +269,6 @@ class AppViewModel @Inject constructor(
                                 showSnackbar = true
                             )
                         }
-                        delay(1000)
-                        _state.update { it.copy(showSnackbar = false) }
                         return@launch
                     }
 
@@ -586,7 +580,7 @@ class AppViewModel @Inject constructor(
 
             is AppEvent.OnLogin -> {
                 viewModelScope.launch {
-                    _state.update { it.copy(showLoginSnackbar = false, isLoading = true) }
+                    _state.update { it.copy(showSnackbar = false, isLoading = true) }
                     val result = repository.login(event.email, event.password)
                     when (result){
                         LoginResult.NetworkError -> {
@@ -595,26 +589,26 @@ class AppViewModel @Inject constructor(
                         is LoginResult.Success -> {
                             _state.update { it.copy(
                                 isLoggedIn = true,
-                                showLoginSnackbar = true,
-                                loginSnackbarMessage = "Login Successful"
+                                showSnackbar = true,
+                                snackBarMessage = "Login Successful"
                             ) }
                         }
                         is LoginResult.UnknownError -> {
                             _state.update { it.copy(
-                                showLoginSnackbar = true,
-                                loginSnackbarMessage = result.exception.message ?: "Unknown Error"
+                                showSnackbar = true,
+                                snackBarMessage = result.exception.message ?: "Unknown Error"
                             ) }
                         }
                         LoginResult.UserNotFound -> {
                             _state.update { it.copy(
-                                showLoginSnackbar = true,
-                                loginSnackbarMessage = "User not found"
+                                showSnackbar = true,
+                                snackBarMessage = "User not found"
                             ) }
                         }
                         LoginResult.WrongPassword -> {
                             _state.update { it.copy(
-                                showLoginSnackbar = true,
-                                loginSnackbarMessage = "Wrong Password"
+                                showSnackbar = true,
+                                snackBarMessage = "Wrong Password"
                             ) }
                         }
                     }
