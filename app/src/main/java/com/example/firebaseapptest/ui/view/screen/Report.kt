@@ -67,7 +67,6 @@ fun Report(
     var totalSales = 0
     var totalCashAmount = 0.0
     var totalGCashAmount = 0.0
-    var totalGCashAndCashAmount = 0.0
     var totalSoldItems = 0
 
     state.report.forEach { saleWithItems ->
@@ -202,7 +201,7 @@ fun Report(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                        .padding(16.dp)
                 ) {
                     Text(
                         text = "Total Sales:",
@@ -218,7 +217,6 @@ fun Report(
                         textAlign = TextAlign.End,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 8.dp)
                     )
                 }
             }
@@ -231,7 +229,7 @@ fun Report(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                        .padding(16.dp)
                 ) {
                     Text(
                         text = "Total Cash Amount:",
@@ -247,7 +245,6 @@ fun Report(
                         textAlign = TextAlign.End,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 8.dp)
                     )
                 }
             }
@@ -260,7 +257,7 @@ fun Report(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                        .padding(16.dp)
                 ) {
                     Text(
                         text = "Total GCash Amount:",
@@ -276,7 +273,6 @@ fun Report(
                         textAlign = TextAlign.End,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 8.dp)
                     )
                 }
             }
@@ -290,7 +286,7 @@ fun Report(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp)
+                        .padding(16.dp)
                 ) {
                     Text(
                         text = "Total Sold Items:",
@@ -306,7 +302,6 @@ fun Report(
                         textAlign = TextAlign.End,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 8.dp)
                     )
                 }
             }
@@ -332,7 +327,6 @@ fun Report(
                         totalSales,
                         totalCashAmount,
                         totalGCashAmount,
-                        totalGCashAndCashAmount,
                         totalSoldItems
                     )
                     scope.launch {
@@ -374,7 +368,6 @@ fun Report(
                         totalSales,
                         totalCashAmount,
                         totalGCashAmount,
-                        totalGCashAndCashAmount,
                         totalSoldItems
                     )
                     scope.launch {
@@ -449,7 +442,6 @@ fun generateReportPdf(
     totalSales: Int,
     totalCashAmount: Double,
     totalGCashAmount: Double,
-    totalGCashAndCashAmount: Double,
     totalSoldItems: Int
 ): File {
     val pdfDocument = PdfDocument()
@@ -480,8 +472,6 @@ fun generateReportPdf(
     canvas.drawText("Total Cash Amount: ₱$totalCashAmount", 50f, y.toFloat(), paint)
     y += 30
     canvas.drawText("Total GCash Amount: ₱$totalGCashAmount", 50f, y.toFloat(), paint)
-    y += 30
-    canvas.drawText("Total GCash & Cash Amount: ₱$totalGCashAndCashAmount", 50f, y.toFloat(), paint)
     y += 30
     canvas.drawText("Total Sold Items: $totalSoldItems", 50f, y.toFloat(), paint)
 
