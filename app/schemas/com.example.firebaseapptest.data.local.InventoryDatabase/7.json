@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "2191bd5655cb5fdb56a2648aeba8171a",
+    "identityHash": "e63f7c5cd1c83c0342176eb258ca1399",
     "entities": [
       {
         "tableName": "items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` INTEGER NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `description` TEXT, `color` TEXT, `size` TEXT, `quantity` INTEGER, `sold` INTEGER, `discount` REAL NOT NULL, `isDiscountPercentage` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` INTEGER NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `description` TEXT, `color` TEXT, `size` TEXT, `quantity` INTEGER, `sold` INTEGER, `discount` REAL NOT NULL, `isDiscountPercentage` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, `needSync` INTEGER NOT NULL, `needToDelete` INTEGER NOT NULL, PRIMARY KEY(`code`))",
         "fields": [
           {
             "fieldPath": "code",
@@ -62,6 +62,24 @@
             "columnName": "isDiscountPercentage",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needSync",
+            "columnName": "needSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needToDelete",
+            "columnName": "needToDelete",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -73,7 +91,7 @@
       },
       {
         "tableName": "sales",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `total` REAL NOT NULL, `paymentMethod` TEXT NOT NULL, `amountPaidCash` REAL NOT NULL, `amountPaidGCash` REAL NOT NULL, `change` REAL NOT NULL, `gCashReference` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `total` REAL NOT NULL, `paymentMethod` TEXT NOT NULL, `amountPaidCash` REAL NOT NULL, `amountPaidGCash` REAL NOT NULL, `change` REAL NOT NULL, `gCashReference` TEXT NOT NULL, `lastUpdated` INTEGER NOT NULL, `needSync` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -120,7 +138,20 @@
           {
             "fieldPath": "gCashReference",
             "columnName": "gCashReference",
-            "affinity": "TEXT"
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needSync",
+            "columnName": "needSync",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -132,7 +163,7 @@
       },
       {
         "tableName": "sale_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sale_id` INTEGER NOT NULL, `item_code` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, `price` REAL NOT NULL, `discount` REAL NOT NULL, `isDiscountPercentage` INTEGER NOT NULL, FOREIGN KEY(`sale_id`) REFERENCES `sales`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`item_code`) REFERENCES `items`(`code`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sale_id` INTEGER NOT NULL, `item_code` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, `price` REAL NOT NULL, `discount` REAL NOT NULL, `isDiscountPercentage` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, `needSync` INTEGER NOT NULL, FOREIGN KEY(`sale_id`) REFERENCES `sales`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`item_code`) REFERENCES `items`(`code`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -173,6 +204,18 @@
           {
             "fieldPath": "isDiscountPercentage",
             "columnName": "isDiscountPercentage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needSync",
+            "columnName": "needSync",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -227,11 +270,53 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `email` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `isOwner` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "password",
+            "columnName": "password",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isOwner",
+            "columnName": "isOwner",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2191bd5655cb5fdb56a2648aeba8171a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e63f7c5cd1c83c0342176eb258ca1399')"
     ]
   }
 }
