@@ -1,6 +1,6 @@
 ## Android Point of Sales
 
-An offline-first point of sales android application with barcode scanner...
+An offline-first point-of-sale Android application with barcode scanner functionality, designed for small to medium-sized businesses to efficiently manage sales transactions. It features a cloud database for synchronization and supports monitoring of inventory, sales, and reports.
 
 ### Developed With
 
@@ -14,7 +14,7 @@ An offline-first point of sales android application with barcode scanner...
 ![ZXing.badge]  
 ![Hilt.badge]  
 
-
+### Demo
 
 
 [Kotlin.badge]: https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white
